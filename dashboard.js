@@ -15,6 +15,33 @@ const MENU_DEF = [
 ];
 
 // ================================
+// ROLE NORMALIZATION
+// ================================
+function normalizeRole(role) {
+  if (!role || role.trim() === '') return 'viewer';
+  
+  const roleStr = role.toString().toLowerCase().trim();
+  
+  const roleMap = {
+    'admin': 'administrator',
+    'administrator': 'administrator',
+    'superadmin': 'administrator',
+    'super_admin': 'administrator',
+    'user': 'user',
+    'pengguna': 'user',
+    'anggota': 'user',
+    'member': 'user',
+    'viewer': 'viewer',
+    'guest': 'viewer',
+    'tamu': 'viewer',
+    'manager': 'manager',
+    'manajer': 'manager'
+  };
+  
+  return roleMap[roleStr] || roleStr;
+}
+
+// ================================
 // INIT
 // ================================
 document.addEventListener('DOMContentLoaded', init);
@@ -23,6 +50,15 @@ function init() {
   if (!sessionStorage.getItem('isLoggedIn')) {
     window.location.href = 'login.html';
     return;
+  }
+
+  console.log('=== DASHBOARD INIT ===');
+  console.log('User Role:', sessionStorage.getItem('userRole'));
+  console.log('Full Name:', sessionStorage.getItem('fullName'));
+  console.log('Permissions defined:', typeof PERMISSIONS !== 'undefined');
+  
+  if (typeof PERMISSIONS !== 'undefined') {
+    console.log('Available permission keys:', Object.keys(PERMISSIONS));
   }
 
   setGreeting();
@@ -67,18 +103,44 @@ function renderWorkMenu() {
   }
 
   const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  const role = rawRole.toLowerCase().trim().replace(/\s+/g, '_');
+  const role = normalizeRole(rawRole);
+  console.log('User Role:', rawRole, '→ Normalized:', role);
 
   let allowedPages = [];
 
-  if (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) {
-    allowedPages = PERMISSIONS[role];
+  if (typeof PERMISSIONS !== 'undefined') {
+    // Cari permissions dengan berbagai format key
+    const possibleKeys = [role, rawRole.toLowerCase()];
+    
+    for (const key of possibleKeys) {
+      if (PERMISSIONS[key]) {
+        allowedPages = PERMISSIONS[key];
+        console.log(`✓ Permissions found for key: "${key}"`);
+        break;
+      }
+    }
+    
+    // Fallback jika tidak ditemukan
+    if (allowedPages.length === 0) {
+      console.warn(`✗ No permissions found for "${role}", using default`);
+      // Default berdasarkan role
+      if (role === 'administrator') {
+        allowedPages = MENU_DEF.map(m => m.page);
+      } else if (role === 'user') {
+        allowedPages = ['index.html', 'done.html', 'rekap.html', 'print.html'];
+      } else {
+        allowedPages = ['rekap.html', 'print.html']; // untuk viewer
+      }
+    }
   } else {
-    console.warn(`PERMISSIONS missing for role "${role}", using fallback`);
-    // 🔥 fallback: tampilkan semua menu
+    console.error('PERMISSIONS is not defined!');
+    // Fallback extreme: tampilkan semua
     allowedPages = MENU_DEF.map(m => m.page);
   }
 
+  console.log('Allowed pages:', allowedPages);
+
+  // Render menu
   const html = MENU_DEF
     .filter(menu => allowedPages.includes(menu.page))
     .map(menu => `
@@ -93,7 +155,7 @@ function renderWorkMenu() {
     `)
     .join('');
 
-  container.innerHTML = html || '<p class="text-muted">No menu available</p>';
+  container.innerHTML = html || '<p class="text-muted">Tidak ada menu tersedia</p>';
 }
 
 // ================================
