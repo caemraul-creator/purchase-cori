@@ -43,7 +43,12 @@ function setGreeting() {
 
 function renderWorkMenu() {
   const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  const role = rawRole.toLowerCase().trim().replace(/ /g, '_');
+  // Normalize role - sama seperti di auth.js
+  const role = String(rawRole)
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_]/g, '');
   
   // Use PERMISSIONS from config.js (global)
   const allowed = (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) ? PERMISSIONS[role] : [];
