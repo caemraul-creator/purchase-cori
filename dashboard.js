@@ -1,19 +1,24 @@
 // =========================================
-// dashboard.js - CLEAN VERSION
-// SUDAH REMOVE SEMUA DUPLICATE DARI config.js
+// dashboard.js - FINAL PRODUCTION VERSION
 // =========================================
 
-// Menu definition - TIDAK perlu PERMISSIONS di sini, sudah ada di config.js
+// ================================
+// MENU DEFINITION
+// ================================
 const MENU_DEF = [
-  { id: 'request', page: 'index.html', icon: '📋', title: 'New Request', desc: 'Create and submit new purchase requests.' },
-  { id: 'approval', page: 'approval.html', icon: '📬', title: 'Approval Hub', desc: 'Central portal to review and approve requests.' },
-  { id: 'done', page: 'done.html', icon: '📦', title: 'Fulfillment', desc: 'Track and finalize procurement steps.' },
-  { id: 'rekap', page: 'rekap.html', icon: '📊', title: 'Report Center', desc: 'Comprehensive analytics and history.' },
-  { id: 'rejected', page: 'rejected.html', icon: '⛔', title: 'Rejection Log', desc: 'Archive of non-fulfillment decisions.' },
-  { id: 'print', page: 'print.html', icon: '📥', title: 'Export & Print', desc: 'Download data purchase request to PDF/Excel.' }
+  { id: 'request',  page: 'index.html',    icon: '📋', title: 'New Request',    desc: 'Create and submit new purchase requests.' },
+  { id: 'approval', page: 'approval.html', icon: '📬', title: 'Approval Hub',    desc: 'Central portal to review and approve requests.' },
+  { id: 'done',     page: 'done.html',     icon: '📦', title: 'Fulfillment',     desc: 'Track and finalize procurement steps.' },
+  { id: 'rekap',    page: 'rekap.html',    icon: '📊', title: 'Report Center',    desc: 'Comprehensive analytics and history.' },
+  { id: 'rejected', page: 'rejected.html', icon: '⛔', title: 'Rejection Log',    desc: 'Archive of non-fulfillment decisions.' },
+  { id: 'print',    page: 'print.html',    icon: '📥', title: 'Export & Print',   desc: 'Download data purchase request to PDF/Excel.' }
 ];
 
-// Core Logic
+// ================================
+// INIT
+// ================================
+document.addEventListener('DOMContentLoaded', init);
+
 function init() {
   if (!sessionStorage.getItem('isLoggedIn')) {
     window.location.href = 'login.html';
@@ -22,96 +27,127 @@ function init() {
 
   setGreeting();
   renderWorkMenu();
-  if (typeof API_URL !== 'undefined') loadDashboardStatsOptimized();
+
+  if (typeof API_URL !== 'undefined' && typeof loadMultipleSheets === 'function') {
+    loadDashboardStatsOptimized();
+  }
 }
 
+// ================================
+// GREETING
+// ================================
 function setGreeting() {
-  const gText = document.getElementById('greetingText');
-  if (!gText) return; 
-  
+  const el = document.getElementById('greetingText');
+  if (!el) return;
+
   const hour = new Date().getHours();
-  let msg = 'Halo';
+  let greet = 'Halo';
 
-  if (hour < 11) msg = 'Selamat Pagi';
-  else if (hour < 15) msg = 'Selamat Siang';
-  else if (hour < 19) msg = 'Selamat Sore';
-  else msg = 'Selamat Malam';
+  if (hour < 11) greet = 'Selamat Pagi';
+  else if (hour < 15) greet = 'Selamat Siang';
+  else if (hour < 19) greet = 'Selamat Sore';
+  else greet = 'Selamat Malam';
 
-  const fullName = sessionStorage.getItem('fullName') || sessionStorage.getItem('username') || 'Rekan';
-  gText.textContent = `${msg}, ${fullName}`;
+  const name =
+    sessionStorage.getItem('fullName') ||
+    sessionStorage.getItem('username') ||
+    'Rekan';
+
+  el.textContent = `${greet}, ${name}`;
 }
 
+// ================================
+// MENU RENDER (ANTI BLANK)
+// ================================
 function renderWorkMenu() {
-  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  // Normalize role - sama seperti di auth.js
-  const role = String(rawRole)
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_]/g, '');
-  
-  // Use PERMISSIONS from config.js (global)
-  const allowed = (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) ? PERMISSIONS[role] : [];
   const container = document.getElementById('menuContainer');
-  
-  if (!container) return;
+  if (!container) {
+    console.warn('menuContainer not found');
+    return;
+  }
 
-  container.innerHTML = MENU_DEF
-    .filter(m => allowed.includes(m.page))
-    .map(m => `
-      <a href="${m.page}" class="menu-item" data-page="${m.page}">
-        <div class="menu-item-icon">${m.icon}</div>
+  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
+  const role = rawRole.toLowerCase().trim().replace(/\s+/g, '_');
+
+  let allowedPages = [];
+
+  if (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) {
+    allowedPages = PERMISSIONS[role];
+  } else {
+    console.warn(`PERMISSIONS missing for role "${role}", using fallback`);
+    // 🔥 fallback: tampilkan semua menu
+    allowedPages = MENU_DEF.map(m => m.page);
+  }
+
+  const html = MENU_DEF
+    .filter(menu => allowedPages.includes(menu.page))
+    .map(menu => `
+      <a href="${menu.page}" class="menu-item" data-page="${menu.page}">
+        <div class="menu-item-icon">${menu.icon}</div>
         <div class="menu-item-info">
-          <h3>${m.title}</h3>
-          <p>${m.desc}</p>
+          <h3>${menu.title}</h3>
+          <p>${menu.desc}</p>
         </div>
         <div class="menu-item-arrow">→</div>
       </a>
-    `).join('');
+    `)
+    .join('');
+
+  container.innerHTML = html || '<p class="text-muted">No menu available</p>';
 }
 
-// =========================================
-// OPTIMIZED STATS ENGINE
-// =========================================
-let statsData = { pending: 0, approved: 0, done: 0, rejected: 0 };
+// ================================
+// DASHBOARD STATS (OPTIMIZED)
+// ================================
+let statsData = {
+  pending: 0,
+  approved: 0,
+  done: 0,
+  rejected: 0
+};
+
 let seenIds = new Set();
 
 function loadDashboardStatsOptimized() {
   statsData = { pending: 0, approved: 0, done: 0, rejected: 0 };
   seenIds.clear();
 
-  if (typeof loadMultipleSheets === 'function') {
-      loadMultipleSheets(['', 'done', 'rejected'], (results) => {
-        // Main Sheet
-        (results[''] || []).forEach(item => processItem(item));
-        // Done Sheet
-        (results['done'] || []).forEach(item => { if(item.ID) statsData.done++; });
-        // Rejected Sheet
-        (results['rejected'] || []).forEach(item => { if(item.ID) statsData.rejected++; });
+  loadMultipleSheets(['', 'done', 'rejected'], (results) => {
+    // MAIN SHEET
+    (results[''] || []).forEach(item => processItem(item));
 
-        syncStatsUI();
-      });
-  }
+    // DONE
+    (results['done'] || []).forEach(item => {
+      if (item.ID) statsData.done++;
+    });
+
+    // REJECTED
+    (results['rejected'] || []).forEach(item => {
+      if (item.ID) statsData.rejected++;
+    });
+
+    syncStatsUI();
+  });
 }
 
 function processItem(item) {
-  if (!item.ID || seenIds.has(item.ID)) return;
-  const s = (item.Status || '').toLowerCase();
-  if (statsData.hasOwnProperty(s)) {
-    statsData[s]++;
+  if (!item || !item.ID || seenIds.has(item.ID)) return;
+
+  const status = (item.Status || '').toLowerCase().trim();
+  if (statsData.hasOwnProperty(status)) {
+    statsData[status]++;
     seenIds.add(item.ID);
   }
 }
 
 function syncStatsUI() {
-  const setTxt = (id, val) => {
-    const el = document.getElementById(id);
-    if(el) el.textContent = val;
-  };
-  setTxt('statPending', statsData.pending);
-  setTxt('statApproved', statsData.approved);
-  setTxt('statDone', statsData.done);
-  setTxt('statRejected', statsData.rejected);
+  setText('statPending', statsData.pending);
+  setText('statApproved', statsData.approved);
+  setText('statDone', statsData.done);
+  setText('statRejected', statsData.rejected);
 }
 
-document.addEventListener('DOMContentLoaded', init);
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
