@@ -2,20 +2,6 @@
 // dashboard.js - UPDATE WITH PRINT MENU
 // =========================================
 
-// Configuration
-const PERMISSIONS = {
-  admin: ['dashboard.html', 'index.html', 'approval.html', 'done.html', 'rekap.html', 'rejected.html', 'print.html'],
-  viewer: ['dashboard.html', 'index.html', 'print.html'],
-  staff_a: ['dashboard.html', 'index.html', 'rekap.html', 'rejected.html', 'print.html'],
-  staff_b: ['dashboard.html', 'index.html', 'approval.html', 'done.html', 'rekap.html', 'print.html'],
-  staff_c: ['dashboard.html', 'index.html', 'approval.html', 'done.html', 'rekap.html', 'rejected.html', 'print.html']
-};
-
-function normalizeRole(role) {
-  if (!role) return 'viewer';
-  return role.toLowerCase().trim().replace(/ /g, '_');
-}
-
 const MENU_DEF = [
   { id: 'request', page: 'index.html', icon: '📋', title: 'New Request', desc: 'Create and submit new purchase requests.' },
   { id: 'approval', page: 'approval.html', icon: '📬', title: 'Approval Hub', desc: 'Central portal to review and approve requests.' },
@@ -120,5 +106,6 @@ function syncStatsUI() {
   setTxt('statDone', statsData.done);
   setTxt('statRejected', statsData.rejected);
 }
+
 
 document.addEventListener('DOMContentLoaded', init);
