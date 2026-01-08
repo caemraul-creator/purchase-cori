@@ -9,7 +9,7 @@
 
 // Google Apps Script Deployment URL
 // PASTIKAN URL INI ADALAH DEPLOYMENT ID TERBARU!
-const API_URL = "https://script.google.com/macros/s/AKfycbyGToDbI6GpI6jkq8r7Y-mBdxpnpKRRDZrN3xRk7Tf_HR26QwlvjIeCj_9IvUm1E93Sbw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzk0aq1VZAN96O5UPZRC0HoipmhmHBm9n7KI9mtgzEKULEtz7IXXXsYwKTxR3gSqmWDtA/exec";
 
 // Validasi API_URL saat load
 if (!API_URL || !API_URL.includes('script.google.com')) {
@@ -167,4 +167,5 @@ const Logger = {
     console.log(`Environment: ${APP_CONFIG.environment}`);
     console.log(`API URL: ${API_URL.split('?')[0]}`);
   }
+
 })();
