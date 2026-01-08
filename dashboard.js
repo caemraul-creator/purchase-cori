@@ -1,14 +1,15 @@
 // =========================================
-// dashboard.js - UPDATE WITH PRINT MENU
+// dashboard.js - CLEAN VERSION
+// SUDAH REMOVE SEMUA DUPLICATE DARI config.js
 // =========================================
 
+// Menu definition - TIDAK perlu PERMISSIONS di sini, sudah ada di config.js
 const MENU_DEF = [
   { id: 'request', page: 'index.html', icon: '📋', title: 'New Request', desc: 'Create and submit new purchase requests.' },
   { id: 'approval', page: 'approval.html', icon: '📬', title: 'Approval Hub', desc: 'Central portal to review and approve requests.' },
   { id: 'done', page: 'done.html', icon: '📦', title: 'Fulfillment', desc: 'Track and finalize procurement steps.' },
   { id: 'rekap', page: 'rekap.html', icon: '📊', title: 'Report Center', desc: 'Comprehensive analytics and history.' },
   { id: 'rejected', page: 'rejected.html', icon: '⛔', title: 'Rejection Log', desc: 'Archive of non-fulfillment decisions.' },
-  // MENU PRINT DITAMBAHKAN DISINI:
   { id: 'print', page: 'print.html', icon: '📥', title: 'Export & Print', desc: 'Download data purchase request to PDF/Excel.' }
 ];
 
@@ -20,7 +21,6 @@ function init() {
   }
 
   setGreeting();
-  // renderUserStatus(); // Biarkan ui-helper.js yang menangani ini
   renderWorkMenu();
   if (typeof API_URL !== 'undefined') loadDashboardStatsOptimized();
 }
@@ -43,8 +43,10 @@ function setGreeting() {
 
 function renderWorkMenu() {
   const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  const role = normalizeRole(rawRole);
-  const allowed = PERMISSIONS[role] || [];
+  const role = rawRole.toLowerCase().trim().replace(/ /g, '_');
+  
+  // Use PERMISSIONS from config.js (global)
+  const allowed = (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) ? PERMISSIONS[role] : [];
   const container = document.getElementById('menuContainer');
   
   if (!container) return;
@@ -106,6 +108,5 @@ function syncStatsUI() {
   setTxt('statDone', statsData.done);
   setTxt('statRejected', statsData.rejected);
 }
-
 
 document.addEventListener('DOMContentLoaded', init);
