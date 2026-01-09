@@ -144,20 +144,29 @@
     }
 
     .logo-container {
-      margin-bottom: 20px;
+      margin-bottom: 25px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .logo-container img {
-      width: 70px;
-      height: 70px;
+      width: 100px; /* DIPERBESAR dari 70px ke 100px */
+      height: 100px; /* DIPERBESAR dari 70px ke 100px */
       object-fit: contain;
-      margin: 0 auto;
       display: block;
-      border-radius: 16px;
-      padding: 12px;
+      border-radius: 20px;
+      padding: 15px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
       animation: float 6s ease-in-out infinite;
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .logo-container img:hover {
+      transform: scale(1.05);
     }
 
     @keyframes float {
@@ -165,7 +174,7 @@
         transform: translateY(0);
       }
       50% {
-        transform: translateY(-10px);
+        transform: translateY(-12px);
       }
     }
 
@@ -226,6 +235,8 @@
       cursor: pointer;
       transition: all 0.3s ease;
       margin-top: 10px;
+      position: relative;
+      overflow: hidden;
     }
 
     .btn-login:hover:not(:disabled) {
@@ -353,8 +364,8 @@
       }
       
       .logo-container img {
-        width: 65px;
-        height: 65px;
+        width: 90px; /* Sesuaikan untuk tablet */
+        height: 90px;
       }
       
       .login-left h1 {
@@ -381,9 +392,9 @@
       }
       
       .logo-container img {
-        width: 60px;
-        height: 60px;
-        padding: 10px;
+        width: 85px; /* Sesuaikan untuk mobile */
+        height: 85px;
+        padding: 12px;
       }
     }
   </style>
