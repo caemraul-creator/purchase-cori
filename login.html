@@ -14,95 +14,200 @@
     }
 
     body {
-      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Background decorative elements */
+    .bg-shapes {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .shape-1 {
+      width: 300px;
+      height: 300px;
+      top: -150px;
+      right: -150px;
+    }
+
+    .shape-2 {
+      width: 200px;
+      height: 200px;
+      bottom: -100px;
+      left: -100px;
+    }
+
+    .shape-3 {
+      width: 150px;
+      height: 150px;
+      top: 50%;
+      right: 10%;
     }
 
     .login-container {
       background: white;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       overflow: hidden;
-      max-width: 900px;
+      max-width: 1000px;
       width: 100%;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      animation: slideUp 0.6s ease;
+      grid-template-columns: 1.2fr 0.8fr;
+      animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      z-index: 1;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     @keyframes slideUp {
       from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(40px) scale(0.95);
       }
 
       to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
       }
     }
 
     .login-left {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 60px 40px;
+      background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+      padding: 70px 50px;
       color: white;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-left::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #ff6b6b, #667eea, #4fd1c7);
+    }
+
+    .app-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 8px 16px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 30px;
+      width: fit-content;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .app-badge i {
+      font-size: 1.1rem;
     }
 
     .login-left h1 {
-      font-size: 2rem;
-      margin-bottom: 20px;
-      font-weight: 700;
+      font-size: 2.5rem;
+      margin-bottom: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+      background: linear-gradient(to right, #ffffff, #e0e7ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .login-left p {
-      font-size: 1rem;
-      opacity: 0.9;
-      line-height: 1.6;
-      margin-bottom: 30px;
+      font-size: 1.1rem;
+      opacity: 0.95;
+      line-height: 1.7;
+      margin-bottom: 40px;
+      font-weight: 400;
     }
 
     .feature-list {
       list-style: none;
+      margin-bottom: 40px;
     }
 
     .feature-list li {
-      padding: 10px 0;
+      padding: 14px 0;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 16px;
+      font-size: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s ease;
+    }
+
+    .feature-list li:hover {
+      transform: translateX(5px);
+    }
+
+    .feature-list li:last-child {
+      border-bottom: none;
     }
 
     .feature-list li::before {
       content: '✓';
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       background: rgba(255, 255, 255, 0.2);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+    }
+
+    .feature-list li:hover::before {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
     }
 
     .login-right {
-      padding: 60px 40px;
+      padding: 70px 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #ffffff;
     }
 
     .login-header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 50px;
     }
 
     .logo-container {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      position: relative;
     }
 
     .logo-container img {
@@ -111,89 +216,135 @@
       object-fit: contain;
       margin: 0 auto;
       display: block;
+      border-radius: 16px;
+      padding: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-10px) rotate(5deg);
+      }
     }
 
     .login-header h2 {
-      font-size: 1.8rem;
+      font-size: 2rem;
       color: #1f2937;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+      font-weight: 700;
     }
 
     .login-header p {
       color: #6b7280;
-      font-size: 0.9rem;
+      font-size: 1rem;
+      font-weight: 400;
     }
 
     .form-group {
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     .form-group label {
       display: block;
-      font-size: 0.875rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: #374151;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .form-group input,
     .form-group select {
       width: 100%;
-      padding: 12px 16px;
+      padding: 16px 20px;
       border: 2px solid #e5e7eb;
-      border-radius: 10px;
-      font-size: 0.95rem;
+      border-radius: 12px;
+      font-size: 1rem;
       transition: all 0.3s ease;
+      background: #f9fafb;
     }
 
     .form-group input:focus,
     .form-group select:focus {
       outline: none;
       border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background: white;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .form-group input::placeholder {
+      color: #9ca3af;
     }
 
     .btn-login {
       width: 100%;
-      padding: 14px;
+      padding: 18px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 1rem;
+      border-radius: 12px;
+      font-size: 1.05rem;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: all 0.3s ease;
       position: relative;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .btn-login::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
     }
 
     .btn-login:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-login:hover:not(:disabled)::before {
+      width: 300px;
+      height: 300px;
     }
 
     .btn-login:active {
-      transform: translateY(0);
+      transform: translateY(-1px);
     }
 
     .btn-login:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+      transform: none !important;
     }
 
     .btn-login.loading::after {
       content: '';
       position: absolute;
-      width: 16px;
-      height: 16px;
+      width: 20px;
+      height: 20px;
       top: 50%;
       left: 50%;
-      margin-left: -8px;
-      margin-top: -8px;
-      border: 2px solid #ffffff;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
-      border-top-color: transparent;
-      animation: spinner 0.6s linear infinite;
+      border-top-color: white;
+      animation: spinner 0.8s linear infinite;
     }
 
     @keyframes spinner {
@@ -203,54 +354,116 @@
     }
 
     .message {
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      margin-bottom: 20px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      margin-bottom: 24px;
       display: none;
+      align-items: center;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .message.show {
-      display: block;
-      animation: shake 0.5s ease;
+      display: flex;
     }
 
     .message.error {
-      background: #fee2e2;
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
       color: #dc2626;
+      border-left: 4px solid #dc2626;
     }
 
     .message.success {
-      background: #d1fae5;
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
       color: #065f46;
+      border-left: 4px solid #10b981;
     }
 
-    @keyframes shake {
-      0%,
-      100% {
-        transform: translateX(0);
-      }
-
-      25% {
-        transform: translateX(-10px);
-      }
-
-      75% {
-        transform: translateX(10px);
-      }
+    .message-icon {
+      font-size: 1.2rem;
     }
 
-    @media (max-width: 768px) {
+    /* Footer */
+    .login-footer {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.85rem;
+    }
+
+    .version-info {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .version-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .copyright {
+      opacity: 0.8;
+      font-size: 0.8rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
       .login-container {
         grid-template-columns: 1fr;
+        max-width: 500px;
       }
 
       .login-left {
-        display: none;
+        padding: 50px 40px;
       }
 
       .login-right {
+        padding: 50px 40px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+
+      .login-container {
+        border-radius: 16px;
+      }
+
+      .login-left,
+      .login-right {
         padding: 40px 30px;
+      }
+
+      .login-left h1 {
+        font-size: 2rem;
+      }
+
+      .login-header h2 {
+        font-size: 1.7rem;
       }
     }
   </style>
@@ -258,17 +471,33 @@
 
 <body>
 
+  <!-- Background Shapes -->
+  <div class="bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
   <div class="login-container">
     <!-- Left Side -->
     <div class="login-left">
-      <h1>🛍️ Purchase Request System</h1>
-      <p>Sistem manajemen permintaan pembelian barang yang modern dan efisien</p>
+      <div class="app-badge">
+        <i>🛍️</i>
+        <span>ENTERPRISE EDITION</span>
+      </div>
+      
+      <h1>Purchase Request System</h1>
+      <p>Sistem manajemen permintaan pembelian yang modern, aman, dan efisien untuk optimasi workflow bisnis Anda.</p>
+      
       <ul class="feature-list">
-        <li>Dashboard interaktif dengan statistik real-time</li>
-        <li>Approval workflow yang terstruktur</li>
-        <li>Laporan dan rekapitulasi lengkap</li>
-        <li>Role-based access control</li>
-        <li>Login tersimpan aman di database</li>
+        <li>Dashboard Real-time dengan Visual Analytics</li>
+        <li>Multi-level Approval Workflow</li>
+        <li>Role-based Access Control (RBAC)</li>
+        <li>Reporting & Analytics Dashboard</li>
+        <li>Cloud-Native Architecture</li>
+        <li>Mobile Responsive Design</li>
+        <li>Enterprise Security Standards</li>
+        <li>Automatic Data Backup</li>
       </ul>
     </div>
 
@@ -278,25 +507,45 @@
         <div class="logo-container">
           <img src="logo.png" alt="Company Logo">
         </div>
-        <h2>Selamat Datang</h2>
-        <p>Silakan login untuk melanjutkan</p>
+        <h2>Welcome Back</h2>
+        <p>Sign in to your account to continue</p>
       </div>
 
-      <div id="message" class="message"></div>
+      <div id="message" class="message">
+        <span class="message-icon"></span>
+        <span class="message-text"></span>
+      </div>
 
       <form id="loginForm">
         <div class="form-group">
-          <label>Username</label>
-          <input type="text" id="username" required placeholder="Masukkan username" autocomplete="username">
+          <label for="username">Username</label>
+          <input type="text" id="username" required 
+                 placeholder="Enter your username"
+                 autocomplete="username">
         </div>
 
         <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="password" required placeholder="Masukkan password" autocomplete="current-password">
+          <label for="password">Password</label>
+          <input type="password" id="password" required 
+                 placeholder="Enter your password"
+                 autocomplete="current-password">
         </div>
 
-        <button type="submit" class="btn-login" id="btnLogin">Login</button>
+        <button type="submit" class="btn-login" id="btnLogin">
+          Sign In
+        </button>
       </form>
+
+      <!-- Footer -->
+      <div class="login-footer">
+        <div class="version-info">
+          <span>Purchase Request System</span>
+          <span class="version-badge">v1.5</span>
+        </div>
+        <div class="copyright">
+          © 2024 PT. Coco Riki International • All rights reserved
+        </div>
+      </div>
     </div>
   </div>
 
@@ -304,22 +553,34 @@
   <script src="auth.js"></script>
   <script>
   // =====================================================
-  // LOGIN FORM HANDLER - CLOUDFLARE OPTIMIZED
+  // LOGIN FORM HANDLER - ENHANCED VERSION
   // =====================================================
 
   const messageDiv = document.getElementById('message');
+  const messageText = messageDiv.querySelector('.message-text');
+  const messageIcon = messageDiv.querySelector('.message-icon');
   const loginForm = document.getElementById('loginForm');
   const btnLogin = document.getElementById('btnLogin');
 
   function showMessage(text, type = 'error') {
-    messageDiv.textContent = text;
+    messageText.textContent = text;
+    messageIcon.textContent = type === 'error' ? '❌' : '✅';
     messageDiv.className = `message ${type} show`;
-    setTimeout(() => messageDiv.classList.remove('show'), 5000);
+    
+    if (type === 'error') {
+      // Add shake animation for error
+      messageDiv.style.animation = 'fadeIn 0.3s ease, shake 0.5s ease';
+    }
+    
+    setTimeout(() => {
+      messageDiv.classList.remove('show');
+      messageDiv.style.animation = '';
+    }, 5000);
   }
 
   function setLoading(isLoading) {
     btnLogin.disabled = isLoading;
-    btnLogin.textContent = isLoading ? '' : 'Login';
+    btnLogin.innerHTML = isLoading ? '' : '<span>Sign In</span>';
     btnLogin.classList.toggle('loading', isLoading);
   }
 
@@ -331,13 +592,13 @@
 
     // Validasi input
     if (!username || !password) {
-      showMessage('⚠️ Semua field harus diisi!', 'error');
+      showMessage('⚠️ Please fill in all required fields', 'error');
       return;
     }
 
     // Validasi API_URL
     if (typeof API_URL === 'undefined' || !API_URL) {
-      showMessage('❌ Config tidak ditemukan. Pastikan config.js tersedia!', 'error');
+      showMessage('❌ Configuration error. Please contact administrator.', 'error');
       console.error('API_URL undefined in config.js');
       return;
     }
@@ -350,12 +611,12 @@
       if (response && response.success) {
         handleSuccess(response);
       } else {
-        const errorMsg = response?.message || 'Username atau password salah';
+        const errorMsg = response?.message || 'Invalid username or password';
         showMessage('❌ ' + errorMsg, 'error');
       }
     } catch (err) {
       console.error('Login error:', err);
-      showMessage('❌ Gagal terhubung ke server. Periksa koneksi internet Anda.', 'error');
+      showMessage('❌ Connection failed. Please check your internet connection.', 'error');
     } finally {
       setLoading(false);
     }
@@ -378,14 +639,14 @@
         resolve(response);
       };
 
-      // Timeout 15 detik
+      // Timeout 20 detik
       const timeout = setTimeout(() => {
         if (!isResolved) {
           isResolved = true;
           cleanup();
-          reject(new Error('Login timeout - server tidak merespons'));
+          reject(new Error('Server timeout - Please try again'));
         }
-      }, 15000);
+      }, 20000);
 
       function cleanup() {
         clearTimeout(timeout);
@@ -401,7 +662,8 @@
         action: 'login',
         username: username,
         password: password,
-        callback: callbackName
+        callback: callbackName,
+        timestamp: Date.now()
       });
 
       try {
@@ -419,7 +681,7 @@
           if (!isResolved) {
             isResolved = true;
             cleanup();
-            reject(new Error('Network error - gagal terhubung ke server'));
+            reject(new Error('Network error - Cannot connect to server'));
           }
         };
 
@@ -435,12 +697,15 @@
    * Handle successful login
    */
   function handleSuccess(response) {
-    showMessage('✅ Login berhasil! Mengalihkan...', 'success');
+    showMessage('✅ Login successful! Redirecting...', 'success');
+
+    // Add confetti effect on success
+    createConfetti();
 
     // Debug info
     console.log('=== LOGIN SUCCESS ===');
     console.log('User:', response.user.username);
-    console.log('Raw role:', response.user.role);
+    console.log('Role:', response.user.role);
 
     // Normalize role
     const rawRole = response.user.role || 'viewer';
@@ -448,7 +713,6 @@
 
     console.log('Normalized role:', role);
     console.log('Available permissions:', Object.keys(PERMISSIONS || {}));
-    console.log('Is valid role?', role in (PERMISSIONS || {}));
     console.log('====================');
 
     // Store session
@@ -462,16 +726,20 @@
     const allowed = (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) ? PERMISSIONS[role] : [];
     const target = allowed.length ? allowed[0] : 'index.html';
 
-    console.log(`Redirecting to: ${target}`);
+    console.log(`🎯 Redirecting to: ${target}`);
+
+    // Add success animation before redirect
+    btnLogin.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+    btnLogin.innerHTML = '<span>✓ Success!</span>';
 
     // Redirect dengan delay
     setTimeout(() => {
       window.location.href = target;
-    }, 600);
+    }, 1200);
   }
 
   /**
-   * Normalize role function (duplicate dari auth.js untuk keamanan)
+   * Normalize role function
    */
   function normalizeRole(role) {
     if (!role) return 'viewer';
@@ -483,7 +751,7 @@
   }
 
   /**
-   * Set user session (duplicate dari auth.js)
+   * Set user session
    */
   function setUserSession(username, fullName, role) {
     sessionStorage.setItem('username', username);
@@ -493,12 +761,53 @@
     sessionStorage.setItem('loginTime', new Date().toISOString());
   }
 
+  /**
+   * Create confetti effect
+   */
+  function createConfetti() {
+    const colors = ['#667eea', '#764ba2', '#ff6b6b', '#4fd1c7', '#fbbf24'];
+    
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement('div');
+      confetti.style.cssText = `
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        border-radius: 50%;
+        top: -20px;
+        left: ${Math.random() * 100}vw;
+        animation: fall linear forwards;
+        z-index: 9999;
+      `;
+      
+      const animation = confetti.animate([
+        { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+        { transform: `translateY(${window.innerHeight + 20}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+      ], {
+        duration: 1000 + Math.random() * 1000,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+      });
+      
+      document.body.appendChild(confetti);
+      animation.onfinish = () => confetti.remove();
+    }
+  }
+
   // Check if already logged in
   window.addEventListener('load', () => {
     if (sessionStorage.getItem('isLoggedIn') === 'true') {
       console.log('User already logged in, redirecting to dashboard...');
-      window.location.href = 'dashboard.html';
+      showMessage('🔄 Already logged in, redirecting...', 'success');
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 800);
     }
+    
+    // Add focus effect to first input
+    setTimeout(() => {
+      document.getElementById('username').focus();
+    }, 300);
   });
   </script>
 
