@@ -1,6 +1,7 @@
 /**
  * auth.js - Authentication & Authorization
  * Kompatibel dengan Cloudflare Pages, Vercel, dan platform lain
+ * REVISI: Fixed untuk Cloudflare Pages routing
  */
 
 // ===============================
@@ -47,6 +48,40 @@ function checkAuth() {
 // ===============================
 
 /**
+ * Get current page name - FIX untuk Cloudflare Pages
+ * Menangani berbagai format:
+ * - /approval → approval.html
+ * - /approval.html → approval.html
+ * - / (root) → index.html
+ * - index.html → index.html
+ */
+function getCurrentPage() {
+  let page = window.location.pathname;
+  
+  console.log(`📍 Debug Pathname: "${page}"`);
+  
+  // Handle root atau path kosong
+  if (!page || page === '/' || page === '/index.html') {
+    return 'index.html';
+  }
+  
+  // Remove leading slash
+  page = page.replace(/^\//, '');
+  
+  // Tambahkan .html jika belum ada extension
+  // Tapi jangan tambah jika sudah ada .html, .php, dll
+  if (!page.match(/\.[a-zA-Z]{2,4}$/)) {
+    page += '.html';
+  }
+  
+  // Remove query string dan hash
+  page = page.split('?')[0].split('#')[0];
+  
+  console.log(`📍 Extracted page: "${page}"`);
+  return page;
+}
+
+/**
  * Check apakah user punya akses ke halaman ini
  * Return: true jika boleh, false jika tidak
  */
@@ -54,12 +89,8 @@ function checkPermission() {
   // 1. Check login first
   if (!checkAuth()) return false;
 
-  // 2. Get current page
-  let page = window.location.pathname.split('/').pop();
-  if (!page) page = 'index.html';
-  
-  // Remove query string jika ada
-  page = page.split('?')[0];
+  // 2. Get current page (fixed untuk Cloudflare Pages)
+  const page = getCurrentPage();
 
   // 3. Get user role
   const rawRole = sessionStorage.getItem('userRole');
@@ -175,6 +206,46 @@ function validateSession(maxHours = 8) {
 }
 
 // ===============================
+// NAVIGATION HELPER
+// ===============================
+
+/**
+ * Helper untuk navigasi yang aman di Cloudflare Pages
+ * Gunakan ini untuk semua link di aplikasi
+ */
+function navigateTo(page) {
+  // Pastikan page punya extension .html
+  let targetPage = page;
+  if (!targetPage.includes('.html')) {
+    targetPage += '.html';
+  }
+  
+  console.log(`Navigating to: ${targetPage}`);
+  window.location.href = targetPage;
+}
+
+/**
+ * Helper untuk mengecek apakah user punya akses ke suatu page
+ * Berguna untuk menampilkan/hide menu
+ */
+function hasAccessTo(page) {
+  const rawRole = sessionStorage.getItem('userRole');
+  const role = normalizeRole(rawRole);
+  
+  if (typeof PERMISSIONS === 'undefined') return false;
+  
+  const allowedPages = PERMISSIONS[role] || [];
+  
+  // Normalize page name
+  let targetPage = page;
+  if (!targetPage.includes('.html')) {
+    targetPage += '.html';
+  }
+  
+  return allowedPages.includes(targetPage);
+}
+
+// ===============================
 // INIT - Auto Check Permission
 // ===============================
 
@@ -183,7 +254,7 @@ function validateSession(maxHours = 8) {
  * Skip untuk login.html
  */
 document.addEventListener('DOMContentLoaded', function() {
-  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  const currentPage = getCurrentPage();
   const isLoginPage = currentPage.includes('login');
 
   if (!isLoginPage) {
@@ -197,4 +268,40 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }, 5 * 60 * 1000);
   }
+  
+  // Debug info
+  console.log('🔧 Auth.js Loaded - Cloudflare Pages Ready');
+  console.log('📄 Current Page:', currentPage);
+});
+
+// ===============================
+// CLOUDFLARE PAGES COMPATIBILITY
+// ===============================
+
+/**
+ * Fix untuk link yang perlu bekerja di Cloudflare Pages
+ * Tambahkan event listener untuk semua link
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  // Tambahkan .html ke semua internal link yang tidak punya extension
+  setTimeout(() => {
+    const links = document.querySelectorAll('a[href]:not([href*="://"]):not([href^="#"])');
+    links.forEach(link => {
+      const href = link.getAttribute('href');
+      
+      // Skip jika sudah ada extension atau file
+      if (href.includes('.html') || href.includes('.css') || href.includes('.js') || 
+          href.includes('.png') || href.includes('.jpg') || href.includes('.ico')) {
+        return;
+      }
+      
+      // Skip jika href kosong atau anchor
+      if (!href || href === '#' || href.startsWith('#')) {
+        return;
+      }
+      
+      // Tambahkan .html untuk Cloudflare Pages compatibility
+      link.setAttribute('href', href + '.html');
+    });
+  }, 100);
 });
