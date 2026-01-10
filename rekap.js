@@ -10,18 +10,44 @@ const REKAP_HIDDEN_COLUMNS = [
   'RejectedBy', 
   'RejectedDate', 
   'RejectedReason',
+  // 'SubmissionDate',  // JANGAN dihide, kita akan tampilkan dengan format berbeda
+  'Requester'
 ];
 
 const NUMBER_COLUMNS = ['Qty'];
 const CURRENCY_COLUMNS = ['Price', 'Nominal'];
 const DATE_COLUMNS = ['LastBuyingDate', 'OrderDate'];
 const DATETIME_COLUMNS = ['CreatedAt', 'ApprovedDate', 'DoneDate', 'RejectedDate'];
+// Hapus 'SubmissionDate' dari DATETIME_COLUMNS karena kita akan format khusus
 
 let allData = [];
 let filteredData = [];
 let headers = [];
 let currentPage = 1;
 let pageSize = 20;
+
+// ======================
+// FORMATTER FUNCTIONS
+// ======================
+function formatSubmissionDate(dateValue) {
+  if (!dateValue) return '';
+  
+  try {
+    const d = new Date(dateValue);
+    if (isNaN(d.getTime())) return dateValue;
+    
+    // Format: dd/mm/yyyy jam:menit
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hour = String(d.getHours()).padStart(2, '0');
+    const minute = String(d.getMinutes()).padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hour}:${minute}`;
+  } catch (err) {
+    return dateValue;
+  }
+}
 
 // ======================
 // LOAD DATA (WITH FORCE REFRESH OPTION)
@@ -42,7 +68,6 @@ function loadData(forceRefresh = false) {
     if (allData.length > 0) {
       const allColumns = Object.keys(allData[0] || {});
       console.log('📊 All columns in done sheet:', allColumns);
-      console.log('🚫 Columns to hide:', REKAP_HIDDEN_COLUMNS);
       
       // Filter kolom yang akan ditampilkan
       headers = allColumns.filter(h => !REKAP_HIDDEN_COLUMNS.includes(h));
@@ -64,7 +89,99 @@ function loadData(forceRefresh = false) {
 }
 
 // ======================
-// SEARCH & PAGE
+// RENDER TABLE (UPDATED)
+// ======================
+function renderTable() {
+  const thead = document.querySelector('thead');
+  const tbody = document.querySelector('tbody');
+  if (!thead || !tbody) return;
+
+  // Header dengan pengecekan
+  const headerHtml = headers.map(h => {
+    // Pastikan kolom yang dihide tidak muncul
+    if (REKAP_HIDDEN_COLUMNS.includes(h)) {
+      console.warn(`⚠️ Column "${h}" should be hidden but still in headers!`);
+      return '';
+    }
+    
+    // Ganti nama header jika diperlukan
+    let displayName = h;
+    if (h === 'SubmissionDate') {
+      displayName = 'Submission Date';
+    }
+    
+    return `<th>${displayName}</th>`;
+  }).filter(Boolean).join(''); // Filter string kosong
+  
+  thead.innerHTML = `<tr>${headerHtml}</tr>`;
+
+  const pageData = getPagedData();
+  if (!pageData.length) {
+    tbody.innerHTML = `<tr><td colspan="${headers.length}" class="text-center">Data tidak ditemukan</td></tr>`;
+    return;
+  }
+
+  const rowsHtml = pageData.map(r => {
+    let cellsHtml = headers.map(h => {
+      // Skip jika kolom seharusnya dihide
+      if (REKAP_HIDDEN_COLUMNS.includes(h)) {
+        return '';
+      }
+      
+      let v = r[h] ?? '';
+      let cls = '';
+
+      // Format khusus untuk SubmissionDate
+      if (h === 'SubmissionDate') {
+        v = formatSubmissionDate(v);
+        cls = 'text-center';
+      }
+      // Format untuk kolom datetime lainnya
+      else if (DATETIME_COLUMNS.includes(h)) { 
+        v = formatDateTime(v); 
+        cls = 'text-center'; 
+      }
+      // Format untuk kolom date
+      else if (DATE_COLUMNS.includes(h)) { 
+        v = formatDate(v); 
+        cls = 'text-center'; 
+      }
+      // Format untuk kolom number
+      else if (NUMBER_COLUMNS.includes(h)) { 
+        v = formatNumber(v); 
+        cls = 'text-right'; 
+      }
+      // Format untuk kolom currency
+      else if (CURRENCY_COLUMNS.includes(h)) { 
+        v = formatRupiah(v); 
+        cls = 'text-right'; 
+      }
+
+      let cell = `<td class="${cls}">${v}</td>`;
+      
+      // Format khusus untuk Status
+      if (h === 'Status') {
+        const status = String(v).toLowerCase();
+        cell = `<td class="text-center"><span class="status ${status}">${v}</span></td>`;
+      }
+      
+      return cell;
+    }).filter(Boolean).join(''); // Filter string kosong
+    
+    return `<tr>${cellsHtml}</tr>`;
+  });
+
+  // Menggunakan lazyRenderRows dari ui-helper.js
+  if (typeof lazyRenderRows === 'function') {
+    lazyRenderRows(rowsHtml, tbody, 50);
+  } else {
+    // Fallback jika lazyRenderRows tidak tersedia
+    tbody.innerHTML = rowsHtml.join('');
+  }
+}
+
+// ======================
+// SEARCH & PAGE (Tetap sama)
 // ======================
 function onSearch(e) {
   const q = e.target.value.toLowerCase();
@@ -147,79 +264,6 @@ function renderPagination() {
       renderPagination(); 
     };
     container.appendChild(nextBtn);
-  }
-}
-
-// ======================
-// RENDER TABLE
-// ======================
-function renderTable() {
-  const thead = document.querySelector('thead');
-  const tbody = document.querySelector('tbody');
-  if (!thead || !tbody) return;
-
-  // Header dengan pengecekan
-  const headerHtml = headers.map(h => {
-    // Pastikan kolom yang dihide tidak muncul
-    if (REKAP_HIDDEN_COLUMNS.includes(h)) {
-      console.warn(`⚠️ Column "${h}" should be hidden but still in headers!`);
-      return '';
-    }
-    return `<th>${h}</th>`;
-  }).filter(Boolean).join(''); // Filter string kosong
-  
-  thead.innerHTML = `<tr>${headerHtml}</tr>`;
-
-  const pageData = getPagedData();
-  if (!pageData.length) {
-    tbody.innerHTML = `<tr><td colspan="${headers.length}" class="text-center">Data tidak ditemukan</td></tr>`;
-    return;
-  }
-
-  const rowsHtml = pageData.map(r => {
-    let cellsHtml = headers.map(h => {
-      // Skip jika kolom seharusnya dihide
-      if (REKAP_HIDDEN_COLUMNS.includes(h)) {
-        return '';
-      }
-      
-      let v = r[h] ?? '';
-      let cls = '';
-
-      if (DATETIME_COLUMNS.includes(h)) { 
-        v = formatDateTime(v); 
-        cls = 'text-center'; 
-      }
-      else if (DATE_COLUMNS.includes(h)) { 
-        v = formatDate(v); 
-        cls = 'text-center'; 
-      }
-      if (NUMBER_COLUMNS.includes(h)) { 
-        v = formatNumber(v); 
-        cls = 'text-right'; 
-      }
-      if (CURRENCY_COLUMNS.includes(h)) { 
-        v = formatRupiah(v); 
-        cls = 'text-right'; 
-      }
-
-      let cell = `<td class="${cls}">${v}</td>`;
-      if (h === 'Status') {
-        const status = String(v).toLowerCase();
-        cell = `<td class="text-center"><span class="status ${status}">${v}</span></td>`;
-      }
-      return cell;
-    }).filter(Boolean).join(''); // Filter string kosong
-    
-    return `<tr>${cellsHtml}</tr>`;
-  });
-
-  // Menggunakan lazyRenderRows dari ui-helper.js
-  if (typeof lazyRenderRows === 'function') {
-    lazyRenderRows(rowsHtml, tbody, 50);
-  } else {
-    // Fallback jika lazyRenderRows tidak tersedia
-    tbody.innerHTML = rowsHtml.join('');
   }
 }
 
