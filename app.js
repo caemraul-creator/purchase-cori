@@ -3,7 +3,7 @@
 // ======================
 const HIDDEN_COLUMNS = [
   'DoneBy', 'DoneDate', 'CreatedAt', 'RejectedBy', 
-  'RejectedDate', 'RejectedReason', 'PartOf'
+  'RejectedDate', 'RejectedReason', 'PartOf', 'Requester'
 ];
 
 const NUMBER_COLUMNS = ['Qty'];
