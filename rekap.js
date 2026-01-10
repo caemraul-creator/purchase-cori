@@ -1,7 +1,7 @@
 // ======================
 // CONFIG & STATE
 // ======================
-const REKAP_HIDDEN_COLUMNS = ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'Rejectedby'];
+const REKAP_HIDDEN_COLUMNS = ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'Rejectedby', 'Rejecteddate', 'Rejectedreason'];
 const NUMBER_COLUMNS = ['Qty'];
 const CURRENCY_COLUMNS = ['Price', 'Nominal'];
 const DATE_COLUMNS = ['SubmissionDate', 'LastBuyingDate', 'OrderDate'];
