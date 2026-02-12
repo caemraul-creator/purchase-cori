@@ -15,12 +15,20 @@
 <body class="theme-done">
 
   <!-- BARIS-1 : judul + Dashboard dengan LOGO -->
-  <div style="display:flex; gap: 12px; justify-content:space-between; align-items:center; margin-bottom:10px;">
+  <div class="head-bar" style="display:flex; gap: 12px; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <div style="display: flex; align-items: center; gap: 12px;">
       <img src="logo.png" alt="Company Logo" style="width: 48px; height: 48px; object-fit: contain;">
-      <h2>Done Purchase Request</h2>
+      <div>
+        <h2 style="margin: 0;">Done Purchase Request</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: #6b7280; font-weight: 400;">Kelola request yang sudah di-approve</p>
+      </div>
     </div>
-    <a href="dashboard.html" class="btn-secondary btn-link">← Dashboard</a>
+    <div style="display: flex; gap: 8px;">
+      <button onclick="refreshDoneData()" class="btn-secondary" style="display: flex; align-items: center; gap: 6px;" title="Refresh Data">
+        🔄 Refresh
+      </button>
+      <a href="dashboard.html" class="btn-secondary btn-link">← Dashboard</a>
+    </div>
   </div>
 
   <!-- BARIS-2 : filter + search -->
