@@ -560,8 +560,8 @@ select,
   gap: 14px;
   border: 1px solid #e5e7eb;
   
-  /* Transparency effect - tidak ganggu saat scroll */
-  opacity: 0.3;
+  /* Transparency effect - semi-transparent */
+  opacity: 0.5;
   transition: opacity 0.3s ease, transform 0.2s ease;
   cursor: pointer;
 }
