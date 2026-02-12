@@ -24,7 +24,7 @@ let allData = [];
 let filteredData = [];
 let headers = [];
 let currentPage = 1;
-let pageSize = 20;
+let pageSize = 100;
 
 // ======================
 // FORMATTER FUNCTIONS

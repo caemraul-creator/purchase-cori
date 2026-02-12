@@ -14,7 +14,7 @@ let allData = [];
 let filteredData = [];
 let headers = [];
 let currentPage = 1;
-let pageSize = 15;
+let pageSize = 100;
 
 // ======================
 // LOAD DATA

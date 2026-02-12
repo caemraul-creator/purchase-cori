@@ -15,7 +15,7 @@ let allData = [];
 let filteredData = [];
 let headers = [];
 let currentPage = 1;
-let pageSize = 25;
+let pageSize = 100;
 let editMode = false;
 let currentEditId = null;
 
