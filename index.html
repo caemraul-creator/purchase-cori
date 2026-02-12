@@ -34,103 +34,10 @@
         grid-column: span 1;
       }
     }
-
-    /* ===== USER FLOATER STYLE ===== */
-    .user-floater {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: white;
-      padding: 12px 20px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      border: 1px solid #e5e7eb;
-      animation: slideUp 0.6s ease;
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .user-avatar {
-      width: 42px;
-      height: 42px;
-      background: linear-gradient(135deg, #a8e6d8, #7ddcd0);
-      color: #0d5046;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    .user-meta {
-      text-align: left;
-    }
-
-    .user-id {
-      font-weight: 700;
-      color: #1f2937;
-      font-size: 0.95rem;
-    }
-
-    .user-tag {
-      font-size: 0.75rem;
-      color: #065f46;
-      text-transform: uppercase;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    .nav-logout {
-      background: #f5bfbf;
-      color: #7f1d1d;
-      border: none;
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 16px;
-      transition: all 0.2s;
-    }
-
-    .nav-logout:hover {
-      background: #f0a5a5;
-      color: #5a1111;
-      transform: scale(1.05);
-    }
-
-    @media (max-width: 768px) {
-      .user-floater {
-        position: fixed;
-        bottom: auto;
-        right: auto;
-        top: 15px;
-        left: 15px;
-        width: calc(100% - 30px);
-      }
-    }
   </style>
 </head>
 
 <body class="theme-request">
-  <!-- User Floater Status Bar -->
-  <div id="userFloater" class="user-floater"></div>
 
   <!-- BARIS-1 : Modern Header dengan icon dan subtitle -->
   <div class="head-bar"
