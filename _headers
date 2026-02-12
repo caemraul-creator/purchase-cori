@@ -1,6 +1,6 @@
 # =======================================================
 # CLOUDFLARE PAGES / NETLIFY HEADERS CONFIGURATION
-# Production-Ready Security & Performance Headers
+# Fixed for Google Apps Script JSONP
 # =======================================================
 
 # ===== GLOBAL HEADERS (Apply to all paths) =====
@@ -14,12 +14,11 @@
   # Force HTTPS (HSTS) - 1 year + subdomains
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   
-  # Content Security Policy (CSP) - CRITICAL FOR SECURITY!
-  # Sesuaikan dengan kebutuhan aplikasi Anda
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://script.google.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
+  # Content Security Policy (CSP) - FIXED FOR GOOGLE APPS SCRIPT
+  # Mengizinkan script dari Google Apps Script (script.google.com + script.googleusercontent.com)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://script.google.com https://script.googleusercontent.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
   
-  # CORS - Restricted (hanya untuk domain Anda sendiri)
-  # Ganti * dengan domain spesifik jika perlu lebih ketat
+  # CORS - Restricted
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, POST, OPTIONS, HEAD
   Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With
@@ -60,28 +59,24 @@
 /*.js
   Cache-Control: public, max-age=604800, immutable
   X-Content-Type-Options: nosniff
-  # 7 days cache (lebih aman dari 1 tahun)
-  # Gunakan versioning (?v=1.0.0) atau hash untuk cache busting
 
 
 # ===== CSS FILES =====
 /*.css
   Cache-Control: public, max-age=604800, immutable
   X-Content-Type-Options: nosniff
-  # 7 days cache
 
 
-# ===== IMAGES/LOGOS (Longer Cache OK) =====
+# ===== IMAGES/LOGOS =====
 /logo.png
 /logo.jpg
 /logo.jpeg
 /logo.svg
 /logo.webp
   Cache-Control: public, max-age=2592000, immutable
-  # 30 days cache untuk static images
 
 
-# ===== FONTS (Long Cache OK) =====
+# ===== FONTS =====
 /*.woff
 /*.woff2
 /*.ttf
@@ -103,7 +98,6 @@
 /sw.js
 /service-worker.js
   Cache-Control: no-cache, no-store, must-revalidate
-  Content-Type: application/json
 
 
 # ===== ROBOTS & SITEMAP =====
