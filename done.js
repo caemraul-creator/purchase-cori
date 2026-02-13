@@ -1,6 +1,6 @@
 // ============================================
 // DONE.JS - Purchase Request Done List
-// FIXED VERSION - No UI references
+// Menampilkan data yang sudah APPROVED
 // ============================================
 
 // Konstanta untuk kolom-kolom yang perlu di-hide atau format
@@ -21,7 +21,7 @@ let sortDirection = 'asc';
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Done page initializing...');
 
-    // Cek Auth (jika ada AUTH module)
+    // Cek Auth
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'login.html';
         return;
@@ -50,42 +50,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Auto-refresh data setiap 60 detik (optional)
+    // Auto-refresh data setiap 60 detik
     setInterval(() => {
         console.log('🔄 Auto-refreshing done data...');
         loadDoneData(true);
-    }, 60000); // 60 detik
+    }, 60000);
 });
 
-// Fungsi untuk memuat data dari Spreadsheet
+// Fungsi untuk memuat data APPROVED dari MAIN sheet
 function loadDoneData(forceRefresh = false) {
     try {
         // Clear cache jika force refresh
         if (forceRefresh && window.dataCache) {
-            delete window.dataCache['done'];
-            console.log('🔄 Cache cleared for done sheet, forcing data refresh');
+            delete window.dataCache['main'];
+            console.log('🔄 Cache cleared for main sheet, forcing data refresh');
         }
 
-        // Show loading (gunakan showLoading dari ui-helper.js)
+        // Show loading
         if (typeof showLoading === 'function') {
             showLoading(true);
         }
         
-        console.log('📦 Loading done purchase requests...');
+        console.log('📦 Loading APPROVED purchase requests from main sheet...');
 
-        // Load dari sheet 'done' menggunakan loadDataOptimized
+        // Load dari MAIN SHEET (empty string = main/default sheet)
         loadDataOptimized((data) => {
             try {
-                allData = data || [];
+                // FILTER: Hanya ambil yang statusnya 'approved'
+                allData = (data || []).filter(item => {
+                    const status = (item.Status || '').toLowerCase().trim();
+                    return status === 'approved';
+                });
                 
-                console.log(`📊 Raw data received: ${allData.length} records`);
+                console.log(`📊 Total records in main sheet: ${data ? data.length : 0}`);
+                console.log(`✅ Filtered APPROVED records: ${allData.length}`);
                 
-                // Sort default berdasarkan tanggal terbaru
+                // Sort default berdasarkan ApprovedDate (terbaru dulu)
                 if (allData.length > 0) {
-                    // Coba sort berdasarkan DoneDate, ApprovedDate, atau SubmissionDate
-                    if (allData[0].DoneDate) {
-                        allData.sort((a, b) => new Date(b.DoneDate) - new Date(a.DoneDate));
-                    } else if (allData[0].ApprovedDate) {
+                    if (allData[0].ApprovedDate) {
                         allData.sort((a, b) => new Date(b.ApprovedDate) - new Date(a.ApprovedDate));
                     } else if (allData[0].SubmissionDate) {
                         allData.sort((a, b) => new Date(b.SubmissionDate) - new Date(a.SubmissionDate));
@@ -96,13 +98,11 @@ function loadDoneData(forceRefresh = false) {
                 
                 renderTable();
                 
-                console.log(`✅ Done data loaded successfully: ${allData.length} records`);
-                
                 if (forceRefresh && typeof showToast === 'function') {
                     showToast('Data diperbarui', 'success');
                 }
             } catch (err) {
-                console.error('❌ Error processing done data:', err);
+                console.error('❌ Error processing approved data:', err);
                 if (typeof showToast === 'function') {
                     showToast('Error memproses data: ' + err.message, 'error');
                 }
@@ -112,12 +112,11 @@ function loadDoneData(forceRefresh = false) {
                     showLoading(false);
                 }
             }
-        }, 'done'); // Sheet name 'done'
+        }, ''); // Empty string = main sheet
         
     } catch (error) {
         console.error('❌ Error in loadDoneData:', error);
         
-        // Hide loading on error
         if (typeof showLoading === 'function') {
             showLoading(false);
         }
@@ -166,7 +165,6 @@ function renderTable() {
     const thead = document.querySelector('thead');
     const tbody = document.querySelector('tbody');
     const infoText = document.getElementById('infoText');
-    const paginationDiv = document.getElementById('pagination');
 
     if (!thead || !tbody) {
         console.error('❌ Element tabel tidak ditemukan');
@@ -181,7 +179,7 @@ function renderTable() {
             ${columns.map(col => `<th style="cursor:pointer" onclick="sortTable('${col}')">${formatHeader(col)}</th>`).join('')}
         </tr>`;
     } else {
-        thead.innerHTML = '<tr><th>Data Kosong</th></tr>';
+        thead.innerHTML = '<tr><th colspan="100%">Tidak ada data approved</th></tr>';
     }
 
     // 2. Pagination Logic
@@ -196,8 +194,10 @@ function renderTable() {
         const colCount = allData.length > 0 ? Object.keys(allData[0]).filter(col => !DONE_HIDDEN_COLUMNS.includes(col)).length + 1 : 1;
         tbody.innerHTML = `
             <tr>
-                <td colspan="${colCount}" style="text-align:center; padding: 20px; color: #888;">
-                    Tidak ada data yang ditemukan.
+                <td colspan="${colCount}" style="text-align:center; padding: 30px; color: #888;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
+                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 5px;">Belum ada data yang di-approve</div>
+                    <div style="font-size: 13px;">Data yang sudah approved akan muncul di sini</div>
                 </td>
             </tr>`;
     } else {
@@ -214,7 +214,7 @@ function renderTable() {
                 let val = row[col] ?? '';
                 let cls = '';
                 
-                // Format sesuai tipe kolom (gunakan formatter dari ui-helper.js)
+                // Format sesuai tipe kolom
                 if (DATETIME_COLUMNS.includes(col)) { 
                     if (typeof formatDateTime === 'function') {
                         val = formatDateTime(val);
@@ -250,8 +250,7 @@ function renderTable() {
                 
                 // Format khusus untuk Status
                 if (col === 'Status') {
-                    const statusClass = String(val).toLowerCase();
-                    cell = `<td class="text-center"><span class="status ${statusClass}">${val}</span></td>`;
+                    cell = `<td class="text-center"><span class="status approved">approved</span></td>`;
                 }
                 
                 html += cell;
@@ -272,9 +271,9 @@ function renderTable() {
     // 4. Update Info Text
     if (infoText) {
         if (totalItems === 0) {
-            infoText.innerHTML = 'Tidak ada data';
+            infoText.innerHTML = 'Tidak ada data approved';
         } else {
-            infoText.innerHTML = `Menampilkan ${startIdx + 1}–${endIdx} dari ${totalItems} data`;
+            infoText.innerHTML = `Menampilkan ${startIdx + 1}–${endIdx} dari ${totalItems} data approved`;
         }
     }
 
@@ -331,7 +330,7 @@ function renderPagination(totalPages) {
     // Prev Button
     html += `<button class="pagination-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>« Prev</button>`;
 
-    // Page Numbers (Simple logic)
+    // Page Numbers
     for (let i = 1; i <= totalPages; i++) {
         if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
             html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
@@ -358,4 +357,4 @@ window.refreshDoneData = refreshDoneData;
 window.sortTable = sortTable;
 window.changePage = changePage;
 
-console.log('✅ done.js loaded successfully');
+console.log('✅ done.js loaded successfully (Filter APPROVED from main sheet)');
