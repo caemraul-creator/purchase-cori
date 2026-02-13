@@ -1,5 +1,6 @@
 // ============================================
 // DONE.JS - Purchase Request Done List
+// FIXED VERSION - No UI references
 // ============================================
 
 // Konstanta untuk kolom-kolom yang perlu di-hide atau format
@@ -18,7 +19,7 @@ let sortDirection = 'asc';
 
 // Inisialisasi
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Done page initializing...');
+    console.log('✅ Done page initializing...');
 
     // Cek Auth (jika ada AUTH module)
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('isLoggedIn') !== 'true') {
@@ -58,51 +59,92 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Fungsi untuk memuat data dari Spreadsheet
 function loadDoneData(forceRefresh = false) {
-    // Clear cache jika force refresh
-    if (forceRefresh && window.dataCache) {
-        delete window.dataCache['done'];
-        console.log('🔄 Cache cleared for done sheet, forcing data refresh');
-    }
+    try {
+        // Clear cache jika force refresh
+        if (forceRefresh && window.dataCache) {
+            delete window.dataCache['done'];
+            console.log('🔄 Cache cleared for done sheet, forcing data refresh');
+        }
 
-    showLoading(true);
-    console.log('Loading done purchase requests...');
-
-    // Load dari sheet 'done' menggunakan loadDataOptimized
-    loadDataOptimized((data) => {
-        allData = data || [];
+        // Show loading (gunakan showLoading dari ui-helper.js)
+        if (typeof showLoading === 'function') {
+            showLoading(true);
+        }
         
-        // Sort default berdasarkan tanggal terbaru
-        if (allData.length > 0) {
-            // Coba sort berdasarkan DoneDate, ApprovedDate, atau SubmissionDate
-            if (allData[0].DoneDate) {
-                allData.sort((a, b) => new Date(b.DoneDate) - new Date(a.DoneDate));
-            } else if (allData[0].ApprovedDate) {
-                allData.sort((a, b) => new Date(b.ApprovedDate) - new Date(a.ApprovedDate));
-            } else if (allData[0].SubmissionDate) {
-                allData.sort((a, b) => new Date(b.SubmissionDate) - new Date(a.SubmissionDate));
+        console.log('📦 Loading done purchase requests...');
+
+        // Load dari sheet 'done' menggunakan loadDataOptimized
+        loadDataOptimized((data) => {
+            try {
+                allData = data || [];
+                
+                console.log(`📊 Raw data received: ${allData.length} records`);
+                
+                // Sort default berdasarkan tanggal terbaru
+                if (allData.length > 0) {
+                    // Coba sort berdasarkan DoneDate, ApprovedDate, atau SubmissionDate
+                    if (allData[0].DoneDate) {
+                        allData.sort((a, b) => new Date(b.DoneDate) - new Date(a.DoneDate));
+                    } else if (allData[0].ApprovedDate) {
+                        allData.sort((a, b) => new Date(b.ApprovedDate) - new Date(a.ApprovedDate));
+                    } else if (allData[0].SubmissionDate) {
+                        allData.sort((a, b) => new Date(b.SubmissionDate) - new Date(a.SubmissionDate));
+                    }
+                }
+
+                filteredData = [...allData];
+                
+                renderTable();
+                
+                console.log(`✅ Done data loaded successfully: ${allData.length} records`);
+                
+                if (forceRefresh && typeof showToast === 'function') {
+                    showToast('Data diperbarui', 'success');
+                }
+            } catch (err) {
+                console.error('❌ Error processing done data:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Error memproses data: ' + err.message, 'error');
+                }
+            } finally {
+                // Hide loading
+                if (typeof showLoading === 'function') {
+                    showLoading(false);
+                }
             }
-        }
-
-        filteredData = [...allData];
+        }, 'done'); // Sheet name 'done'
         
+    } catch (error) {
+        console.error('❌ Error in loadDoneData:', error);
+        
+        // Hide loading on error
+        if (typeof showLoading === 'function') {
+            showLoading(false);
+        }
+        
+        if (typeof showToast === 'function') {
+            showToast('Gagal memuat data: ' + error.message, 'error');
+        }
+        
+        // Render tabel kosong jika error
+        allData = [];
+        filteredData = [];
         renderTable();
-        showLoading(false);
-        
-        console.log(`✅ Done data loaded: ${allData.length} records`);
-        if (forceRefresh) {
-            showToast('Data diperbarui', 'success');
-        }
-    }, 'done'); // Sheet name 'done'
+    }
 }
 
 // Fungsi Refresh dipanggil dari HTML
 function refreshDoneData() {
-    loadDoneData();
+    console.log('🔄 Manual refresh triggered');
+    loadDoneData(true);
 }
 
 // Fungsi Filter/Search
 function applySearch() {
-    const searchTerm = document.getElementById('search').value.toLowerCase();
+    const searchInput = document.getElementById('search');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
     
     if (!searchTerm) {
         filteredData = [...allData];
@@ -127,7 +169,7 @@ function renderTable() {
     const paginationDiv = document.getElementById('pagination');
 
     if (!thead || !tbody) {
-        console.error('Element tabel tidak ditemukan');
+        console.error('❌ Element tabel tidak ditemukan');
         return;
     }
 
@@ -172,22 +214,30 @@ function renderTable() {
                 let val = row[col] ?? '';
                 let cls = '';
                 
-                // Format sesuai tipe kolom
+                // Format sesuai tipe kolom (gunakan formatter dari ui-helper.js)
                 if (DATETIME_COLUMNS.includes(col)) { 
-                    val = formatDateTime(val); 
+                    if (typeof formatDateTime === 'function') {
+                        val = formatDateTime(val);
+                    }
                     cls = 'text-center'; 
                 }
                 else if (DATE_COLUMNS.includes(col)) { 
-                    val = formatDate(val); 
+                    if (typeof formatDate === 'function') {
+                        val = formatDate(val);
+                    }
                     cls = 'text-center'; 
                 }
                 
                 if (NUMBER_COLUMNS.includes(col)) { 
-                    val = formatNumber(val); 
+                    if (typeof formatNumber === 'function') {
+                        val = formatNumber(val);
+                    }
                     cls = 'text-right'; 
                 }
                 if (CURRENCY_COLUMNS.includes(col)) { 
-                    val = formatRupiah(val); 
+                    if (typeof formatRupiah === 'function') {
+                        val = formatRupiah(val);
+                    }
                     cls = 'text-right'; 
                 }
                 
@@ -279,19 +329,19 @@ function renderPagination(totalPages) {
     let html = '';
     
     // Prev Button
-    html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>« Prev</button>`;
+    html += `<button class="pagination-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>« Prev</button>`;
 
     // Page Numbers (Simple logic)
     for (let i = 1; i <= totalPages; i++) {
         if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-            html += `<button onclick="changePage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+            html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
         } else if (i === currentPage - 3 || i === currentPage + 3) {
             html += `<span style="padding: 5px;">...</span>`;
         }
     }
 
     // Next Button
-    html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next »</button>`;
+    html += `<button class="pagination-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next »</button>`;
 
     div.innerHTML = html;
 }
@@ -307,3 +357,5 @@ function changePage(page) {
 window.refreshDoneData = refreshDoneData;
 window.sortTable = sortTable;
 window.changePage = changePage;
+
+console.log('✅ done.js loaded successfully');
