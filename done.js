@@ -2,6 +2,13 @@
 // DONE.JS - Purchase Request Done List
 // ============================================
 
+// Konstanta untuk kolom-kolom yang perlu di-hide atau format
+const DONE_HIDDEN_COLUMNS = ['CreatedAt', 'RejectedBy', 'RejectedDate', 'RejectedReason'];
+const NUMBER_COLUMNS = ['Qty'];
+const CURRENCY_COLUMNS = ['Price', 'Nominal'];
+const DATE_COLUMNS = ['LastBuyingDate', 'OrderDate'];
+const DATETIME_COLUMNS = ['CreatedAt', 'SubmissionDate', 'ApprovedDate', 'DoneDate'];
+
 let allData = [];
 let filteredData = [];
 let currentPage = 1;
@@ -13,8 +20,8 @@ let sortDirection = 'asc';
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Done page initializing...');
 
-    // Cek Auth
-    if (typeof AUTH !== 'undefined' && !AUTH.isLoggedIn()) {
+    // Cek Auth (jika ada AUTH module)
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'login.html';
         return;
     }
@@ -22,12 +29,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load data awal
     loadDoneData();
 
-    // Event Listener untuk Search
+    // Event Listener untuk Search dengan Debounce
     const searchInput = document.getElementById('search');
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            applySearch();
-        });
+        if (typeof debounceSearch === 'function') {
+            searchInput.addEventListener('input', debounceSearch(applySearch, 300));
+        } else {
+            searchInput.addEventListener('input', applySearch);
+        }
     }
 
     // Event Listener untuk Page Size
@@ -39,46 +48,51 @@ document.addEventListener('DOMContentLoaded', function() {
             renderTable();
         });
     }
+    
+    // Auto-refresh data setiap 60 detik (optional)
+    setInterval(() => {
+        console.log('🔄 Auto-refreshing done data...');
+        loadDoneData(true);
+    }, 60000); // 60 detik
 });
 
 // Fungsi untuk memuat data dari Spreadsheet
-async function loadDoneData() {
-    try {
-        UI.showLoading();
-        console.log('Loading done purchase requests...');
+function loadDoneData(forceRefresh = false) {
+    // Clear cache jika force refresh
+    if (forceRefresh && window.dataCache) {
+        delete window.dataCache['done'];
+        console.log('🔄 Cache cleared for done sheet, forcing data refresh');
+    }
 
-        // Panggil API - Sesuaikan 'getDoneRequests' dengan action di Google Apps Script Anda
-        // Jika data PR berada di sheet yang sama dengan barang, mungkin perlu action berbeda
-        const response = await API.get('getDoneRequests'); 
-        
-        console.log('Response:', response);
+    showLoading(true);
+    console.log('Loading done purchase requests...');
 
-        // Asumsi response adalah array of objects
-        allData = response || [];
+    // Load dari sheet 'done' menggunakan loadDataOptimized
+    loadDataOptimized((data) => {
+        allData = data || [];
         
-        // Sort default (misal berdasarkan tanggal terbaru)
+        // Sort default berdasarkan tanggal terbaru
         if (allData.length > 0) {
-            // Deteksi kolom tanggal jika ada
-            if (allData[0].tanggal) {
-                allData.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+            // Coba sort berdasarkan DoneDate, ApprovedDate, atau SubmissionDate
+            if (allData[0].DoneDate) {
+                allData.sort((a, b) => new Date(b.DoneDate) - new Date(a.DoneDate));
+            } else if (allData[0].ApprovedDate) {
+                allData.sort((a, b) => new Date(b.ApprovedDate) - new Date(a.ApprovedDate));
+            } else if (allData[0].SubmissionDate) {
+                allData.sort((a, b) => new Date(b.SubmissionDate) - new Date(a.SubmissionDate));
             }
         }
 
         filteredData = [...allData];
         
         renderTable();
-        UI.hideLoading();
-
-    } catch (error) {
-        console.error('Error loading done data:', error);
-        UI.hideLoading();
-        UI.showAlert('Gagal memuat data: ' + error.message, 'danger');
+        showLoading(false);
         
-        // Render tabel kosong jika error
-        allData = [];
-        filteredData = [];
-        renderTable();
-    }
+        console.log(`✅ Done data loaded: ${allData.length} records`);
+        if (forceRefresh) {
+            showToast('Data diperbarui', 'success');
+        }
+    }, 'done'); // Sheet name 'done'
 }
 
 // Fungsi Refresh dipanggil dari HTML
@@ -117,9 +131,9 @@ function renderTable() {
         return;
     }
 
-    // 1. Generate Header
+    // 1. Generate Header (filter kolom yang di-hide)
     if (allData.length > 0) {
-        const columns = Object.keys(allData[0]);
+        const columns = Object.keys(allData[0]).filter(col => !DONE_HIDDEN_COLUMNS.includes(col));
         thead.innerHTML = `<tr>
             <th>No</th>
             ${columns.map(col => `<th style="cursor:pointer" onclick="sortTable('${col}')">${formatHeader(col)}</th>`).join('')}
@@ -137,32 +151,81 @@ function renderTable() {
 
     // 3. Generate Body
     if (pageData.length === 0) {
+        const colCount = allData.length > 0 ? Object.keys(allData[0]).filter(col => !DONE_HIDDEN_COLUMNS.includes(col)).length + 1 : 1;
         tbody.innerHTML = `
             <tr>
-                <td colspan="100%" style="text-align:center; padding: 20px; color: #888;">
+                <td colspan="${colCount}" style="text-align:center; padding: 20px; color: #888;">
                     Tidak ada data yang ditemukan.
                 </td>
             </tr>`;
     } else {
-        let html = '';
+        const columns = Object.keys(allData[0]).filter(col => !DONE_HIDDEN_COLUMNS.includes(col));
+        let rowsHtml = [];
+        
         pageData.forEach((row, index) => {
             const rowNum = startIdx + index + 1;
-            html += '<tr>';
+            let html = '<tr>';
             html += `<td>${rowNum}</td>`;
             
-            // Loop semua nilai kolom
-            Object.values(row).forEach(val => {
-                html += `<td>${val || '-'}</td>`;
+            // Loop kolom (skip yang di-hide)
+            columns.forEach(col => {
+                let val = row[col] ?? '';
+                let cls = '';
+                
+                // Format sesuai tipe kolom
+                if (DATETIME_COLUMNS.includes(col)) { 
+                    val = formatDateTime(val); 
+                    cls = 'text-center'; 
+                }
+                else if (DATE_COLUMNS.includes(col)) { 
+                    val = formatDate(val); 
+                    cls = 'text-center'; 
+                }
+                
+                if (NUMBER_COLUMNS.includes(col)) { 
+                    val = formatNumber(val); 
+                    cls = 'text-right'; 
+                }
+                if (CURRENCY_COLUMNS.includes(col)) { 
+                    val = formatRupiah(val); 
+                    cls = 'text-right'; 
+                }
+                
+                // Truncate untuk kolom tertentu
+                if (col === 'Items' || col === 'Description') {
+                    cls += ' truncate';
+                }
+                
+                let cell = `<td class="${cls}" title="${val}">${val || '-'}</td>`;
+                
+                // Format khusus untuk Status
+                if (col === 'Status') {
+                    const statusClass = String(val).toLowerCase();
+                    cell = `<td class="text-center"><span class="status ${statusClass}">${val}</span></td>`;
+                }
+                
+                html += cell;
             });
             
             html += '</tr>';
+            rowsHtml.push(html);
         });
-        tbody.innerHTML = html;
+        
+        // Gunakan lazyRenderRows jika tersedia
+        if (typeof lazyRenderRows === 'function') {
+            lazyRenderRows(rowsHtml, tbody, 50);
+        } else {
+            tbody.innerHTML = rowsHtml.join('');
+        }
     }
 
     // 4. Update Info Text
     if (infoText) {
-        infoText.innerHTML = `Menampilkan ${startIdx + 1}-${endIdx} dari ${totalItems} data`;
+        if (totalItems === 0) {
+            infoText.innerHTML = 'Tidak ada data';
+        } else {
+            infoText.innerHTML = `Menampilkan ${startIdx + 1}–${endIdx} dari ${totalItems} data`;
+        }
     }
 
     // 5. Render Pagination
