@@ -3,19 +3,56 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#667eea">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
   <title>Purchase Request System</title>
+
+  <!-- Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style-mobile.css">
   <link rel="icon" href="data:,">
+
+  <!-- Firebase SDK - PASTIKAN VERSI INI -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <!-- html2pdf untuk export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body class="theme-dashboard">
+
+  <!-- MOBILE NAV - Bottom Navigation -->
+  <nav id="mobileNav" class="mobile-nav" style="display:none;">
+    <a href="#" onclick="navigateTo('dashboard')" class="nav-item active" data-page="dashboard">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+    </a>
+    <a href="#" onclick="navigateTo('request')" class="nav-item" data-page="request">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Request</span>
+    </a>
+    <a href="#" onclick="navigateTo('approval')" class="nav-item" data-page="approval">
+      <span class="nav-icon">📬</span>
+      <span class="nav-label">Approval</span>
+    </a>
+    <a href="#" onclick="navigateTo('done')" class="nav-item" data-page="done">
+      <span class="nav-icon">📦</span>
+      <span class="nav-label">Done</span>
+    </a>
+    <a href="#" onclick="navigateTo('rekap')" class="nav-item" data-page="rekap">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Rekap</span>
+    </a>
+  </nav>
 
   <!-- USER FLOATER -->
   <div id="userFloater" class="user-floater"></div>
@@ -26,29 +63,113 @@
   <!-- GLOBAL LOADING -->
   <div id="globalLoading"></div>
 
+  <!-- OFFLINE INDICATOR -->
+  <div id="offlineIndicator"
+    style="display:none;background:#f59e0b;color:#fff;text-align:center;padding:8px;font-size:12px;font-weight:600;position:sticky;top:0;z-index:999;">
+    ⚠️ Mode Offline - Data dari cache
+  </div>
+
   <!-- APP CONTAINER -->
   <div id="app">
     <!-- Semua page container akan di-render oleh JavaScript -->
   </div>
 
-  <!-- SCRIPTS -->
+  <!-- SCRIPTS - URUTAN PENTING -->
   <script src="config.js"></script>
+  <script src="firebase-helper.js"></script>
   <script src="ui-helper.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
 
-  <!-- CEK LOGIN DENGAN AMAN -->
+  <!-- INIT -->
   <script>
     (function () {
+      'use strict';
+
+      // Cek login
       var isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
       console.log('🔐 Index page - isLoggedIn:', isLoggedIn);
 
       if (!isLoggedIn) {
         console.log('❌ Not logged in, redirecting to login.html');
         window.location.href = 'login.html';
-      } else {
-        console.log('✅ User already logged in');
+        return;
       }
+
+      // Init Firebase
+      if (USE_FIREBASE && typeof initFirebase === 'function') {
+        var initResult = initFirebase();
+        if (initResult) {
+          console.log('✅ Firebase ready, preloading data...');
+          setTimeout(function () {
+            if (typeof preloadData === 'function') {
+              preloadData(['', 'done', 'rejected']);
+            }
+          }, 1000);
+        } else {
+          console.warn('⚠️ Firebase not initialized, using API only');
+        }
+      } else {
+        console.log('ℹ️ Firebase disabled, using API only');
+      }
+
+      // Cek offline status
+      window.addEventListener('online', function () {
+        var indicator = document.getElementById('offlineIndicator');
+        if (indicator) indicator.style.display = 'none';
+        if (typeof showToast === 'function') {
+          showToast('Kembali online', 'success');
+        }
+      });
+
+      window.addEventListener('offline', function () {
+        var indicator = document.getElementById('offlineIndicator');
+        if (indicator) indicator.style.display = 'block';
+        if (typeof showToast === 'function') {
+          showToast('Mode Offline - Menggunakan data cache', 'warning');
+        }
+      });
+
+      // Mobile nav - update active state
+      function updateMobileNav(page) {
+        document.querySelectorAll('.nav-item').forEach(function (el) {
+          if (el.dataset.page === page) {
+            el.classList.add('active');
+          } else {
+            el.classList.remove('active');
+          }
+        });
+      }
+
+      // Override navigateTo untuk update nav
+      var originalNavigateTo = window.navigateTo;
+      if (typeof originalNavigateTo === 'function') {
+        window.navigateTo = function (page) {
+          originalNavigateTo(page);
+          updateMobileNav(page);
+        };
+      }
+
+      // Tampilkan mobile nav di mobile
+      function checkMobileNav() {
+        var nav = document.getElementById('mobileNav');
+        if (!nav) return;
+
+        if (window.innerWidth <= 768) {
+          nav.style.display = 'flex';
+        } else {
+          nav.style.display = 'none';
+        }
+      }
+
+      checkMobileNav();
+      window.addEventListener('resize', checkMobileNav);
+
+      // Update nav sesuai page saat ini
+      var currentPage = sessionStorage.getItem('currentPage') || 'dashboard';
+      updateMobileNav(currentPage);
+
+      console.log('✅ Mobile & Firebase ready');
     })();
   </script>
 </body>

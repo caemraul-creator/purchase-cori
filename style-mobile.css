@@ -1,0 +1,410 @@
+/* ============================================================
+   MOBILE-FRIENDLY STYLES
+   ============================================================ */
+
+/* ===== BOTTOM NAVIGATION ===== */
+.mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    display: none;
+    justify-content: space-around;
+    align-items: center;
+    padding: 6px 0 10px 0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    border-top: 1px solid #e5e7eb;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #9ca3af;
+    font-size: 10px;
+    padding: 4px 12px;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    min-width: 50px;
+}
+
+.nav-item .nav-icon {
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+.nav-item .nav-label {
+    font-size: 9px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.nav-item.active {
+    color: #667eea;
+}
+
+.nav-item.active .nav-icon {
+    transform: scale(1.1);
+}
+
+/* ===== MOBILE TABEL ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 8px;
+        padding-bottom: 70px !important;
+    }
+
+    /* Header */
+    .head-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .head-bar h2 {
+        font-size: 1.2rem !important;
+    }
+
+    .head-actions {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .head-actions button,
+    .head-actions .btn-link {
+        font-size: 11px !important;
+        padding: 6px 10px !important;
+        height: auto !important;
+        line-height: 1.4 !important;
+    }
+
+    /* Filter */
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .filter-bar input {
+        min-width: auto !important;
+        width: 100%;
+    }
+
+    /* Table */
+    .table-wrapper {
+        border-radius: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        font-size: 11px;
+        min-width: 600px;
+    }
+
+    th,
+    td {
+        padding: 6px 8px;
+        font-size: 10px;
+    }
+
+    th {
+        font-size: 10px !important;
+        padding: 8px 10px !important;
+    }
+
+    /* Buttons in table */
+    td button {
+        padding: 4px 6px !important;
+        font-size: 9px !important;
+        min-width: 28px;
+    }
+
+    /* Pagination */
+    .table-bottom {
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+    }
+
+    #infoText {
+        font-size: 11px;
+    }
+
+    .pagination-btn {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+
+    /* Dashboard */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 14px !important;
+    }
+
+    .stat-value {
+        font-size: 1.5rem !important;
+    }
+
+    .stat-label {
+        font-size: 0.7rem !important;
+    }
+
+    .stat-icon-wrapper {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 18px !important;
+    }
+
+    .menu-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px;
+    }
+
+    .menu-item {
+        padding: 14px 16px !important;
+    }
+
+    .menu-item-icon {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 18px !important;
+    }
+
+    .menu-item-info h3 {
+        font-size: 0.95rem !important;
+    }
+
+    .menu-item-info p {
+        font-size: 0.75rem !important;
+    }
+
+    /* Modal */
+    .modal-content {
+        margin: 8px;
+        padding: 12px;
+        max-height: 92vh;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px;
+    }
+
+    .form-grid .full {
+        grid-column: span 1 !important;
+    }
+
+    .pr-form input,
+    .pr-form textarea,
+    .pr-form select {
+        font-size: 14px !important;
+        /* Better for mobile */
+        padding: 8px 10px !important;
+    }
+
+    .pr-form label {
+        font-size: 11px !important;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-actions button {
+        width: 100%;
+        padding: 12px !important;
+    }
+
+    /* User Floater */
+    .user-floater {
+        bottom: 70px !important;
+        left: 8px !important;
+        right: 8px !important;
+        width: auto !important;
+        border-radius: 12px !important;
+        padding: 8px 12px !important;
+    }
+
+    .user-avatar {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    .user-id {
+        font-size: 0.8rem !important;
+    }
+
+    .user-tag {
+        font-size: 0.6rem !important;
+    }
+
+    .nav-logout {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 12px !important;
+    }
+
+    /* Toast */
+    .toast {
+        top: 10px !important;
+        right: 10px !important;
+        left: 10px !important;
+        font-size: 12px !important;
+        padding: 10px 14px !important;
+        border-radius: 8px !important;
+    }
+
+    /* Greeting */
+    .greeting-box {
+        font-size: 1.8rem !important;
+    }
+
+    .greeting-box span:last-child {
+        font-size: 1.5rem !important;
+    }
+
+    /* Print Page */
+    .buttons-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .btn {
+        min-height: 44px !important;
+        font-size: 0.8rem !important;
+        padding: 12px 14px !important;
+    }
+}
+
+/* ===== EXTRA SMALL (PHONE) ===== */
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px;
+    }
+
+    .stat-card {
+        padding: 10px !important;
+    }
+
+    .stat-value {
+        font-size: 1.2rem !important;
+    }
+
+    .stat-icon-wrapper {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    .buttons-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .head-bar h2 {
+        font-size: 1rem !important;
+    }
+
+    .head-actions button,
+    .head-actions .btn-link {
+        font-size: 10px !important;
+        padding: 4px 8px !important;
+    }
+
+    table {
+        font-size: 9px;
+        min-width: 480px;
+    }
+
+    th,
+    td {
+        padding: 4px 6px;
+        font-size: 8px;
+    }
+
+    th {
+        font-size: 8px !important;
+        padding: 6px 8px !important;
+    }
+
+    td button {
+        padding: 2px 4px !important;
+        font-size: 8px !important;
+        min-width: 22px;
+    }
+
+    .pagination-btn {
+        padding: 2px 6px;
+        font-size: 9px;
+    }
+
+    .modal-content {
+        padding: 8px;
+    }
+
+    .pr-form input,
+    .pr-form textarea,
+    .pr-form select {
+        font-size: 16px !important;
+        /* Prevent zoom on iOS */
+        padding: 6px 8px !important;
+    }
+}
+
+/* ===== TABLET ===== */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .menu-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ===== TOUCH FRIENDLY ===== */
+@media (hover: none) and (pointer: coarse) {
+
+    /* Larger touch targets */
+    button,
+    .btn-link,
+    .pagination-btn,
+    .menu-item {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    td button {
+        min-height: 32px;
+        min-width: 32px;
+    }
+
+    /* No hover effects on touch */
+    .btn-primary:hover,
+    .btn-secondary:hover,
+    .menu-item:hover {
+        transform: none !important;
+    }
+
+    /* Active state for touch */
+    .btn-primary:active {
+        transform: scale(0.97);
+    }
+
+    .menu-item:active {
+        background: #f3f4f6 !important;
+    }
+}

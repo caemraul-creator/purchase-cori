@@ -1,5 +1,5 @@
 /* ============================
-   GLOBAL UI HELPERS
+   GLOBAL UI HELPERS - WITH FIREBASE
 ============================ */
 
 // =========================================
@@ -47,10 +47,23 @@ function showLoading(show) {
 }
 
 // =========================================
-// 2. MAIN LOAD FUNCTION
+// 2. MAIN LOAD FUNCTION - DENGAN FIREBASE
 // =========================================
 
 function loadDataOptimized(callback, sheetName) {
+  if (sheetName === undefined) sheetName = '';
+
+  // Gunakan loadDataSmart jika Firebase aktif
+  if (typeof loadDataSmart === 'function' && USE_FIREBASE) {
+    loadDataSmart(callback, sheetName, false);
+    return;
+  }
+
+  // Fallback ke load biasa
+  loadDataLegacy(callback, sheetName);
+}
+
+function loadDataLegacy(callback, sheetName) {
   if (sheetName === undefined) sheetName = '';
   const cacheKey = sheetName || 'main';
 
@@ -118,7 +131,7 @@ function loadDataOptimized(callback, sheetName) {
       cleanup(cbName);
       showLoading(false);
       setTimeout(function () {
-        loadDataOptimized(callback, sheetName);
+        loadDataLegacy(callback, sheetName);
       }, delayMs);
     } else {
       showToast('Gagal memuat data dari ' + (sheetName || 'main'), 'error');
@@ -156,6 +169,13 @@ function loadDataOptimized(callback, sheetName) {
 }
 
 function loadMultipleSheets(sheets, onAllLoaded) {
+  // Gunakan loadMultipleSheetsSmart jika ada
+  if (typeof loadMultipleSheetsSmart === 'function' && USE_FIREBASE) {
+    loadMultipleSheetsSmart(sheets, onAllLoaded, false);
+    return;
+  }
+
+  // Fallback
   const results = {};
   let loadedCount = 0;
   const totalSheets = sheets.length;
@@ -185,7 +205,7 @@ function cleanup(cbName) {
 }
 
 // =========================================
-// 3. FORMATTERS
+// 3. FORMATTERS (sama seperti sebelumnya)
 // =========================================
 
 function formatDate(v) {
@@ -322,7 +342,7 @@ function handleLogout() {
   }
 }
 
-// Export untuk digunakan di global
+// Export
 window.showToast = showToast;
 window.formatDate = formatDate;
 window.formatDateTime = formatDateTime;
