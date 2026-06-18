@@ -711,29 +711,53 @@ function addSyncButton() {
 
 
 // =====================================================
-// 5. EXPORTS (semua ke window)
+// 5. EXPORTS (semua ke window) - CSP-friendly, no eval()
 // =====================================================
 
-[
-  // Config
-  'APP_CONFIG', 'API_URL', 'USE_FIREBASE', 'FIREBASE_CONFIG', 'PERMISSIONS', 'ROLE_NAMES',
-  // Auth
-  'normalizeRole', 'checkAuth', 'checkPermission', 'setUserSession', 'clearUserSession',
-  'validateSession', 'logout', 'protectPage',
-  // Cache & utils
-  'dataCache', 'getCachedData', 'setCachedData', 'clearCache', 'clearCacheForAction',
-  'formatDate', 'formatDateTime', 'formatRupiah', 'formatNumber', '_escapeHtml',
-  'lazyRenderRows', 'debounceSearch', 'showToast', 'showLoading', 'confirmDialog',
-  'renderUserStatus', 'handleLogout',
-  // Firebase
-  'initFirebase', 'saveToFirebase', 'loadFromFirebase', 'removeFromFirebase',
-  'syncFirebaseWithSheet', 'loadDataFromAPI', 'loadDataSmart', 'loadDataOptimized',
-  'loadMultipleSheets', 'syncAllSheets', 'startAutoSync', 'addSyncButton'
-].forEach(function (fn) {
-  if (typeof eval(fn) !== 'undefined') window[fn] = eval(fn);
-});
+// Auth
+window.normalizeRole = normalizeRole;
+window.checkAuth = checkAuth;
+window.checkPermission = checkPermission;
+window.setUserSession = setUserSession;
+window.clearUserSession = clearUserSession;
+window.validateSession = validateSession;
+window.logout = logout;
+window.protectPage = protectPage;
 
-// const exports (perlu explicit)
+// Cache & utils
+window.dataCache = dataCache;
+window.getCachedData = getCachedData;
+window.setCachedData = setCachedData;
+window.clearCache = clearCache;
+window.clearCacheForAction = clearCacheForAction;
+window.formatDate = formatDate;
+window.formatDateTime = formatDateTime;
+window.formatRupiah = formatRupiah;
+window.formatNumber = formatNumber;
+window._escapeHtml = _escapeHtml;
+window.lazyRenderRows = lazyRenderRows;
+window.debounceSearch = debounceSearch;
+window.showToast = showToast;
+window.showLoading = showLoading;
+window.confirmDialog = confirmDialog;
+window.renderUserStatus = renderUserStatus;
+window.handleLogout = handleLogout;
+
+// Firebase
+window.initFirebase = initFirebase;
+window.saveToFirebase = saveToFirebase;
+window.loadFromFirebase = loadFromFirebase;
+window.removeFromFirebase = removeFromFirebase;
+window.syncFirebaseWithSheet = syncFirebaseWithSheet;
+window.loadDataFromAPI = loadDataFromAPI;
+window.loadDataSmart = loadDataSmart;
+window.loadDataOptimized = loadDataOptimized;
+window.loadMultipleSheets = loadMultipleSheets;
+window.syncAllSheets = syncAllSheets;
+window.startAutoSync = startAutoSync;
+window.addSyncButton = addSyncButton;
+
+// Config (const need explicit assignment)
 window.APP_CONFIG = APP_CONFIG;
 window.API_URL = API_URL;
 window.USE_FIREBASE = USE_FIREBASE;
