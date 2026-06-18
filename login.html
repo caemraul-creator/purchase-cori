@@ -40,6 +40,7 @@
         opacity: 0;
         transform: translateY(30px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -78,10 +79,6 @@
       margin-bottom: 25px;
       width: fit-content;
       border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .app-badge i {
-      font-size: 1rem;
     }
 
     .login-left h1 {
@@ -152,16 +149,16 @@
     }
 
     .logo-container img {
-      width: 110px; /* DIPERBESAR LAGI */
-      height: 110px; /* DIPERBESAR LAGI */
+      width: 110px;
+      height: 110px;
       object-fit: contain;
       display: block;
       border-radius: 16px;
-      padding: 8px; /* PADDING DIKECILKAN */
+      padding: 8px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
       animation: float 6s ease-in-out infinite;
-      border: 1px solid rgba(255, 255, 255, 0.6); /* BORDER DIKECILKAN */
+      border: 1px solid rgba(255, 255, 255, 0.6);
       transition: transform 0.3s ease;
     }
 
@@ -170,9 +167,12 @@
     }
 
     @keyframes float {
-      0%, 100% {
+
+      0%,
+      100% {
         transform: translateY(0);
       }
+
       50% {
         transform: translateY(-8px);
       }
@@ -219,10 +219,6 @@
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
-    .form-group input::placeholder {
-      color: #9ca3af;
-    }
-
     .btn-login {
       width: 100%;
       padding: 16px;
@@ -242,10 +238,6 @@
     .btn-login:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-    }
-
-    .btn-login:active {
-      transform: translateY(0);
     }
 
     .btn-login:disabled {
@@ -294,6 +286,7 @@
         opacity: 0;
         transform: translateY(-10px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -312,11 +305,6 @@
       border-left: 3px solid #10b981;
     }
 
-    .message-icon {
-      font-size: 1.1rem;
-    }
-
-    /* Footer */
     .login-footer {
       margin-top: 30px;
       padding-top: 20px;
@@ -348,7 +336,6 @@
       font-size: 0.75rem;
     }
 
-    /* Responsive */
     @media (max-width: 768px) {
       .login-container {
         grid-template-columns: 1fr;
@@ -362,16 +349,16 @@
       .login-right {
         padding: 40px 30px;
       }
-      
+
       .logo-container img {
-        width: 95px; /* Sesuaikan untuk tablet */
+        width: 95px;
         height: 95px;
       }
-      
+
       .login-left h1 {
         font-size: 1.8rem;
       }
-      
+
       .login-header h2 {
         font-size: 1.6rem;
       }
@@ -390,9 +377,9 @@
       .login-right {
         padding: 35px 25px;
       }
-      
+
       .logo-container img {
-        width: 90px; /* Sesuaikan untuk mobile */
+        width: 90px;
         height: 90px;
         padding: 6px;
       }
@@ -403,16 +390,13 @@
 <body>
 
   <div class="login-container">
-    <!-- Left Side -->
     <div class="login-left">
       <div class="app-badge">
         <i>🛍️</i>
         <span>ENTERPRISE EDITION</span>
       </div>
-      
       <h1>Purchase Request System</h1>
       <p>Sistem manajemen permintaan pembelian yang modern, aman, dan efisien untuk optimasi workflow bisnis.</p>
-      
       <ul class="feature-list">
         <li>Dashboard Real-time dengan Visual Analytics</li>
         <li>Multi-level Approval Workflow</li>
@@ -425,7 +409,6 @@
       </ul>
     </div>
 
-    <!-- Right Side - Login Form -->
     <div class="login-right">
       <div class="login-header">
         <div class="logo-container">
@@ -443,16 +426,13 @@
       <form id="loginForm">
         <div class="form-group">
           <label for="username">Username</label>
-          <input type="text" id="username" required 
-                 placeholder="Enter your username"
-                 autocomplete="username">
+          <input type="text" id="username" required placeholder="Enter your username" autocomplete="username">
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" required 
-                 placeholder="Enter your password"
-                 autocomplete="current-password">
+          <input type="password" id="password" required placeholder="Enter your password"
+            autocomplete="current-password">
         </div>
 
         <button type="submit" class="btn-login" id="btnLogin">
@@ -460,7 +440,6 @@
         </button>
       </form>
 
-      <!-- Footer -->
       <div class="login-footer">
         <div class="version-info">
           <span>Purchase Request System</span>
@@ -474,219 +453,179 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="ui-helper.js"></script>
   <script src="auth.js"></script>
   <script>
-  // =====================================================
-  // LOGIN FORM HANDLER
-  // =====================================================
+    // =====================================================
+    // LOGIN FORM HANDLER
+    // =====================================================
 
-  const messageDiv = document.getElementById('message');
-  const messageText = messageDiv.querySelector('.message-text');
-  const messageIcon = messageDiv.querySelector('.message-icon');
-  const loginForm = document.getElementById('loginForm');
-  const btnLogin = document.getElementById('btnLogin');
+    const messageDiv = document.getElementById('message');
+    const messageText = messageDiv.querySelector('.message-text');
+    const messageIcon = messageDiv.querySelector('.message-icon');
+    const loginForm = document.getElementById('loginForm');
+    const btnLogin = document.getElementById('btnLogin');
 
-  function showMessage(text, type = 'error') {
-    messageText.textContent = text;
-    messageIcon.textContent = type === 'error' ? '❌' : '✅';
-    messageDiv.className = `message ${type} show`;
-    
-    setTimeout(() => {
-      messageDiv.classList.remove('show');
-    }, 4000);
-  }
-
-  function setLoading(isLoading) {
-    btnLogin.disabled = isLoading;
-    btnLogin.innerHTML = isLoading ? '' : 'Sign In';
-    btnLogin.classList.toggle('loading', isLoading);
-  }
-
-  loginForm.addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-
-    // Validasi input
-    if (!username || !password) {
-      showMessage('⚠️ Please fill in all required fields', 'error');
-      return;
+    function showMessage(text, type = 'error') {
+      messageText.textContent = text;
+      messageIcon.textContent = type === 'error' ? '❌' : '✅';
+      messageDiv.className = `message ${type} show`;
+      setTimeout(() => {
+        messageDiv.classList.remove('show');
+      }, 4000);
     }
 
-    // Validasi API_URL
-    if (typeof API_URL === 'undefined' || !API_URL) {
-      showMessage('❌ Configuration error. Please contact administrator.', 'error');
-      console.error('API_URL undefined in config.js');
-      return;
+    function setLoading(isLoading) {
+      btnLogin.disabled = isLoading;
+      btnLogin.innerHTML = isLoading ? '' : 'Sign In';
+      btnLogin.classList.toggle('loading', isLoading);
     }
 
-    setLoading(true);
+    loginForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
 
-    try {
-      const response = await loginAPI(username, password);
-      
-      if (response && response.success) {
-        handleSuccess(response);
-      } else {
-        const errorMsg = response?.message || 'Invalid username or password';
-        showMessage('❌ ' + errorMsg, 'error');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      showMessage('❌ Connection failed. Please check your internet connection.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  });
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
 
-  /**
-   * Login API call menggunakan JSONP
-   */
-  function loginAPI(username, password) {
-    return new Promise((resolve, reject) => {
-      const callbackName = 'cb_login_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      let isResolved = false;
-
-      // Define callback
-      window[callbackName] = function(response) {
-        if (isResolved) return;
-        isResolved = true;
-
-        cleanup();
-        resolve(response);
-      };
-
-      // Timeout 15 detik
-      const timeout = setTimeout(() => {
-        if (!isResolved) {
-          isResolved = true;
-          cleanup();
-          reject(new Error('Server timeout - Please try again'));
-        }
-      }, 15000);
-
-      function cleanup() {
-        clearTimeout(timeout);
-        delete window[callbackName];
-        const scriptEl = document.getElementById('login-jsonp');
-        if (scriptEl && scriptEl.parentNode) {
-          scriptEl.parentNode.removeChild(scriptEl);
-        }
+      if (!username || !password) {
+        showMessage('⚠️ Please fill in all required fields', 'error');
+        return;
       }
 
-      // Build request
-      const params = new URLSearchParams({
-        action: 'login',
-        username: username,
-        password: password,
-        callback: callbackName,
-        timestamp: Date.now()
-      });
+      if (typeof API_URL === 'undefined' || !API_URL) {
+        showMessage('❌ Configuration error. Please contact administrator.', 'error');
+        console.error('API_URL undefined in config.js');
+        return;
+      }
+
+      setLoading(true);
 
       try {
-        const url = new URL(API_URL);
-        const fullUrl = url.toString() + (url.toString().includes('?') ? '&' : '?') + params.toString();
+        const response = await loginAPI(username, password);
+        console.log('Login response:', response);
 
-        console.log('🔐 Attempting login...');
+        if (response && response.success) {
+          handleSuccess(response);
+        } else {
+          const errorMsg = response?.message || 'Invalid username or password';
+          showMessage('❌ ' + errorMsg, 'error');
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        showMessage('❌ Connection failed: ' + err.message, 'error');
+      } finally {
+        setLoading(false);
+      }
+    });
 
-        const script = document.createElement('script');
-        script.id = 'login-jsonp';
-        script.src = fullUrl;
-        script.async = true;
+    function loginAPI(username, password) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'cb_login_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        let isResolved = false;
+        let timeoutId = null;
 
-        script.onerror = () => {
+        window[callbackName] = function (response) {
+          if (isResolved) return;
+          isResolved = true;
+          if (timeoutId) clearTimeout(timeoutId);
+          cleanup();
+          resolve(response);
+        };
+
+        timeoutId = setTimeout(() => {
           if (!isResolved) {
             isResolved = true;
             cleanup();
-            reject(new Error('Network error - Cannot connect to server'));
+            reject(new Error('Server timeout - Please try again'));
           }
-        };
+        }, 15000);
 
-        document.body.appendChild(script);
-      } catch (err) {
-        cleanup();
-        reject(err);
-      }
-    });
-  }
+        function cleanup() {
+          if (timeoutId) clearTimeout(timeoutId);
+          delete window[callbackName];
+          const scriptEl = document.getElementById('login-jsonp');
+          if (scriptEl && scriptEl.parentNode) {
+            scriptEl.parentNode.removeChild(scriptEl);
+          }
+        }
 
-  /**
-   * Handle successful login
-   */
-  function handleSuccess(response) {
-    showMessage('✅ Login successful! Redirecting...', 'success');
+        try {
+          const url = new URL(API_URL);
+          const params = new URLSearchParams({
+            action: 'login',
+            username: username,
+            password: password,
+            callback: callbackName,
+            timestamp: Date.now()
+          });
 
-    // Debug info
-    console.log('=== LOGIN SUCCESS ===');
-    console.log('User:', response.user.username);
-    console.log('Role:', response.user.role);
+          const fullUrl = url.toString() + (url.search ? '&' : '?') + params.toString();
+          console.log('🔐 Login URL:', fullUrl);
 
-    // Normalize role
-    const rawRole = response.user.role || 'viewer';
-    const role = normalizeRole(rawRole);
+          const script = document.createElement('script');
+          script.id = 'login-jsonp';
+          script.src = fullUrl;
+          script.async = true;
+          script.crossOrigin = 'anonymous';
 
-    console.log('Normalized role:', role);
-    console.log('Available permissions:', Object.keys(PERMISSIONS || {}));
-    console.log('====================');
+          script.onerror = function (err) {
+            console.error('Script load error:', err);
+            if (!isResolved) {
+              isResolved = true;
+              cleanup();
+              reject(new Error('Network error - Cannot connect to server'));
+            }
+          };
 
-    // Store session
-    setUserSession(
-      response.user.username,
-      response.user.fullName || response.user.username,
-      rawRole
-    );
-
-    // Determine redirect target
-    const allowed = (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) ? PERMISSIONS[role] : [];
-    const target = allowed.length ? allowed[0] : 'index.html';
-
-    console.log(`🎯 Redirecting to: ${target}`);
-
-    // Redirect dengan delay
-    setTimeout(() => {
-      window.location.href = target;
-    }, 800);
-  }
-
-  /**
-   * Normalize role function
-   */
-  function normalizeRole(role) {
-    if (!role) return 'viewer';
-    return String(role)
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '_')
-      .replace(/[^a-z0-9_]/g, '');
-  }
-
-  /**
-   * Set user session
-   */
-  function setUserSession(username, fullName, role) {
-    sessionStorage.setItem('username', username);
-    sessionStorage.setItem('fullName', fullName);
-    sessionStorage.setItem('userRole', role);
-    sessionStorage.setItem('isLoggedIn', 'true');
-    sessionStorage.setItem('loginTime', new Date().toISOString());
-  }
-
-  // Check if already logged in
-  window.addEventListener('load', () => {
-    if (sessionStorage.getItem('isLoggedIn') === 'true') {
-      console.log('User already logged in, redirecting to dashboard...');
-      showMessage('🔄 Already logged in, redirecting...', 'success');
-      setTimeout(() => {
-        window.location.href = 'dashboard.html';
-      }, 500);
+          document.head.appendChild(script);
+        } catch (err) {
+          console.error('Error creating login request:', err);
+          cleanup();
+          reject(err);
+        }
+      });
     }
-    
-    // Add focus effect to first input
-    setTimeout(() => {
-      document.getElementById('username').focus();
-    }, 300);
-  });
+
+    function handleSuccess(response) {
+      showMessage('✅ Login successful! Redirecting...', 'success');
+
+      const rawRole = response.user?.role || 'viewer';
+      const username = response.user?.username || 'User';
+      const fullName = response.user?.fullName || username;
+
+      sessionStorage.setItem('username', username);
+      sessionStorage.setItem('fullName', fullName);
+      sessionStorage.setItem('userRole', rawRole);
+      sessionStorage.setItem('isLoggedIn', 'true');
+      sessionStorage.setItem('loginTime', new Date().toISOString());
+      sessionStorage.setItem('currentPage', 'dashboard');
+
+      console.log('✅ Session saved:', {
+        username,
+        role: rawRole,
+        isLoggedIn: sessionStorage.getItem('isLoggedIn')
+      });
+
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 800);
+    }
+
+    window.addEventListener('load', function () {
+      console.log('Login page loaded');
+      console.log('Session check:', sessionStorage.getItem('isLoggedIn'));
+
+      if (sessionStorage.getItem('isLoggedIn') === 'true') {
+        showMessage('🔄 Already logged in, redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 500);
+      }
+
+      setTimeout(() => {
+        document.getElementById('username').focus();
+      }, 300);
+    });
   </script>
 
 </body>

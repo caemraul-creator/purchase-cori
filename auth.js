@@ -1,6 +1,6 @@
 /**
  * auth.js - Authentication & Authorization
- * FINAL VERSION - Fixed untuk Cloudflare Pages
+ * FINAL VERSION - Fixed
  */
 
 // ===============================
@@ -24,7 +24,6 @@ function debugLog(...args) {
 
 function normalizeRole(role) {
   if (!role) return 'viewer';
-  
   return String(role)
     .toLowerCase()
     .trim()
@@ -33,33 +32,7 @@ function normalizeRole(role) {
 }
 
 function getCurrentPage() {
-  let page = window.location.pathname;
-  
-  debugLog('Raw pathname:', page);
-  
-  // Handle root path
-  if (!page || page === '/' || page === '/index.html') {
-    return 'index.html';
-  }
-  
-  // Remove leading slash
-  page = page.replace(/^\//, '');
-  
-  // Handle Cloudflare Pages style (without .html)
-  if (!page.includes('.')) {
-    page += '.html';
-  }
-  
-  // Remove query parameters
-  page = page.split('?')[0].split('#')[0];
-  
-  // Ensure .html extension
-  if (!page.endsWith('.html') && !page.includes('.')) {
-    page += '.html';
-  }
-  
-  debugLog('Final page:', page);
-  return page;
+  return sessionStorage.getItem('currentPage') || 'dashboard';
 }
 
 // ===============================
@@ -68,100 +41,58 @@ function getCurrentPage() {
 
 function checkAuth() {
   const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-  
+  debugLog('checkAuth:', isLoggedIn);
+
   if (!isLoggedIn) {
-    const currentPage = getCurrentPage();
-    if (!currentPage.includes('login')) {
-      debugLog('Redirecting to login');
-      setTimeout(() => {
-        window.location.href = 'login.html';
-      }, 100);
+    if (typeof showToast === 'function') {
+      showToast('Silakan login terlebih dahulu', 'error');
     }
+    setTimeout(() => {
+      window.location.href = 'login.html';
+    }, 500);
     return false;
   }
-  
   return true;
 }
 
-function checkPermission() {
+function checkPermission(page) {
   debugLog('=== PERMISSION CHECK ===');
-  
-  const page = getCurrentPage();
   debugLog('Current page:', page);
-  
-  // Skip for login page
-  if (page.includes('login')) {
-    return true;
-  }
-  
-  // Check if user is logged in
+
   if (!checkAuth()) {
     return false;
   }
-  
-  // Get user role
-  const rawRole = sessionStorage.getItem('userRole');
+
+  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
   const role = normalizeRole(rawRole);
-  debugLog('User role:', role, '(raw:', rawRole + ')');
-  
-  // Check if PERMISSIONS is defined
+  debugLog('User role:', role);
+
   if (typeof PERMISSIONS === 'undefined') {
     console.error('❌ PERMISSIONS tidak defined');
-    // As a fallback, allow access if logged in
-    return sessionStorage.getItem('isLoggedIn') === 'true';
+    return true;
   }
-  
-  // Get allowed pages for role
+
   const allowedPages = PERMISSIONS[role] || [];
-  
-  // Check access with multiple formats
-  const pageWithoutExt = page.replace('.html', '');
-  const hasAccess = allowedPages.includes(page) || 
-                    allowedPages.includes(pageWithoutExt);
-  
+  const hasAccess = allowedPages.includes(page);
+
   if (hasAccess) {
     debugLog(`✅ Access granted: ${role} → ${page}`);
     return true;
   }
-  
-  // ACCESS DENIED - Handle properly
+
   debugLog(`❌ Access denied: ${role} tidak boleh akses ${page}`);
-  debugLog(`Allowed pages: ${allowedPages.join(', ')}`);
-  
-  // Show user-friendly message
-  const roleName = ROLE_NAMES && ROLE_NAMES[role] ? ROLE_NAMES[role] : role;
-  
-  setTimeout(() => {
-    // Only redirect if not already on an allowed page
-    const currentPage = getCurrentPage();
-    const currentPageWithoutExt = currentPage.replace('.html', '');
-    
-    // Check if current page is already allowed
-    const isCurrentPageAllowed = allowedPages.includes(currentPage) || 
-                                allowedPages.includes(currentPageWithoutExt);
-    
-    if (!isCurrentPageAllowed && allowedPages.length > 0) {
-      // Get default page (first in allowed pages)
-      let defaultPage = allowedPages[0];
-      
-      // Ensure default page has .html extension
-      if (!defaultPage.includes('.')) {
-        defaultPage += '.html';
-      } else if (!defaultPage.endsWith('.html')) {
-        defaultPage = defaultPage.split('.')[0] + '.html';
-      }
-      
-      // Prevent redirect loop - check if we're already on default page
-      const current = getCurrentPage();
-      if (current !== defaultPage && current !== defaultPage.replace('.html', '')) {
-        alert(`Maaf, Anda tidak memiliki akses ke halaman ini.\n\nSebagai ${roleName}, Anda hanya dapat mengakses:\n• ${allowedPages.map(p => p.replace('.html', '')).join('\n• ')}`);
-        
-        debugLog(`Redirecting to default page: ${defaultPage}`);
-        window.location.href = defaultPage;
-      }
-    }
-  }, 100);
-  
+
+  if (allowedPages.length > 0) {
+    const defaultPage = allowedPages[0];
+    const roleName = ROLE_NAMES && ROLE_NAMES[role] ? ROLE_NAMES[role] : role;
+
+    setTimeout(() => {
+      alert(`Maaf, Anda tidak memiliki akses ke halaman ini.\n\nSebagai ${roleName}, Anda hanya dapat mengakses:\n• ${allowedPages.join('\n• ')}`);
+      sessionStorage.setItem('currentPage', defaultPage);
+      window.location.reload();
+    }, 100);
+  }
+
   return false;
 }
 
@@ -170,7 +101,7 @@ function checkPermission() {
 // ===============================
 
 function getCurrentUser() {
-  const rawRole = sessionStorage.getItem('userRole');
+  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
   const role = normalizeRole(rawRole);
   const username = sessionStorage.getItem('username') || 'User';
   const fullName = sessionStorage.getItem('fullName') || username;
@@ -191,7 +122,6 @@ function getCurrentUser() {
 
 function setUserSession(username, fullName, role) {
   debugLog('Setting user session:', { username, role });
-  
   sessionStorage.setItem('username', username);
   sessionStorage.setItem('fullName', fullName);
   sessionStorage.setItem('userRole', role);
@@ -201,23 +131,19 @@ function setUserSession(username, fullName, role) {
 
 function clearUserSession() {
   debugLog('Clearing user session');
-  
   sessionStorage.clear();
 }
 
 function validateSession() {
   const loginTime = sessionStorage.getItem('loginTime');
   if (!loginTime) return false;
-
   const elapsed = Date.now() - new Date(loginTime).getTime();
   const maxMs = AUTH_CONFIG.sessionTimeout * 60 * 60 * 1000;
-
   if (elapsed > maxMs) {
     debugLog('Session expired');
     clearUserSession();
     return false;
   }
-
   return true;
 }
 
@@ -233,60 +159,26 @@ function logout() {
 }
 
 function navigateTo(page) {
-  let targetPage = page;
-  
-  // Ensure .html extension
-  if (!targetPage.includes('.')) {
-    targetPage += '.html';
+  debugLog(`Navigating to: ${page}`);
+  sessionStorage.setItem('currentPage', page);
+
+  if (typeof renderPage === 'function') {
+    renderPage(page);
+  } else {
+    window.location.reload();
   }
-  
-  debugLog(`Navigating to: ${targetPage}`);
-  window.location.href = targetPage;
+
+  if (typeof renderUserStatus === 'function') {
+    renderUserStatus();
+  }
 }
 
 function hasAccessTo(page) {
-  const rawRole = sessionStorage.getItem('userRole');
+  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
   const role = normalizeRole(rawRole);
-  
-  if (typeof PERMISSIONS === 'undefined') return false;
-  
+  if (typeof PERMISSIONS === 'undefined') return true;
   const allowedPages = PERMISSIONS[role] || [];
-  const pageWithExt = page.includes('.') ? page : page + '.html';
-  const pageWithoutExt = page.replace('.html', '');
-  
-  return allowedPages.includes(pageWithExt) || 
-         allowedPages.includes(pageWithoutExt);
-}
-
-// ===============================
-// CLOUDFLARE PAGES FIX
-// ===============================
-
-function fixLinksForCloudflare() {
-  const links = document.querySelectorAll('a[href]:not([href*="://"]):not([href^="#"]):not([href^="mailto:"]):not([href^="tel:"])');
-  
-  links.forEach(link => {
-    const href = link.getAttribute('href');
-    
-    // Skip if already has extension or is empty
-    if (!href || 
-        href.includes('.html') ||
-        href.includes('.css') ||
-        href.includes('.js') ||
-        href.includes('.png') ||
-        href.includes('.jpg') ||
-        href.includes('.jpeg') ||
-        href.includes('.gif') ||
-        href.includes('.ico') ||
-        href.includes('.svg')) {
-      return;
-    }
-    
-    // Add .html to internal links
-    const newHref = href + '.html';
-    link.setAttribute('href', newHref);
-    debugLog(`Fixed link: ${href} → ${newHref}`);
-  });
+  return allowedPages.includes(page);
 }
 
 // ===============================
@@ -295,85 +187,75 @@ function fixLinksForCloudflare() {
 
 function initAuth() {
   debugLog('=== AUTH INITIALIZATION ===');
-  debugLog('URL:', window.location.href);
-  debugLog('Pathname:', window.location.pathname);
   debugLog('Session:', {
     isLoggedIn: sessionStorage.getItem('isLoggedIn'),
     userRole: sessionStorage.getItem('userRole'),
     username: sessionStorage.getItem('username')
   });
-  
-  // Get current page
-  const currentPage = getCurrentPage();
-  const isLoginPage = currentPage.includes('login');
-  
-  // Fix links for Cloudflare Pages
-  setTimeout(fixLinksForCloudflare, 100);
-  
-  // If not login page, check permission
-  if (!isLoginPage) {
-    // Check if user is logged in first
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-    
-    if (!isLoggedIn) {
+
+  const currentPage = sessionStorage.getItem('currentPage') || 'dashboard';
+  const isLoginPage = window.location.pathname.includes('login.html');
+
+  if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+    if (!isLoginPage) {
       debugLog('User not logged in, redirecting to login');
       setTimeout(() => {
         window.location.href = 'login.html';
       }, 100);
-      return;
     }
-    
-    // Check permission with delay to ensure DOM is ready
-    setTimeout(() => {
-      checkPermission();
-    }, 50);
+    return;
   }
-  
+
+  if (isLoginPage && sessionStorage.getItem('isLoggedIn') === 'true') {
+    window.location.href = 'index.html';
+    return;
+  }
+
   // Session validation
   setInterval(() => {
     if (sessionStorage.getItem('isLoggedIn') === 'true' && !validateSession()) {
       alert('Sesi Anda telah berakhir. Silakan login kembali.');
       window.location.href = 'login.html';
     }
-  }, 5 * 60 * 1000); // Check every 5 minutes
-  
+  }, 5 * 60 * 1000);
+
   debugLog('Auth initialized');
 }
 
-// ===============================
-// AUTO-INITIALIZE
-// ===============================
+// Export functions
+window.normalizeRole = normalizeRole;
+window.checkAuth = checkAuth;
+window.checkPermission = checkPermission;
+window.getCurrentUser = getCurrentUser;
+window.setUserSession = setUserSession;
+window.clearUserSession = clearUserSession;
+window.logout = logout;
+window.navigateTo = navigateTo;
+window.hasAccessTo = hasAccessTo;
+window.initAuth = initAuth;
 
-// Wait for DOM and config.js to load
-document.addEventListener('DOMContentLoaded', function() {
-  // Try to initialize, retry if PERMISSIONS not loaded yet
+// Auto initialize
+document.addEventListener('DOMContentLoaded', function () {
   const tryInit = (attempt = 0) => {
-    if (typeof PERMISSIONS !== 'undefined' || attempt >= 10) {
-      initAuth();
+    if (typeof PERMISSIONS !== 'undefined' || attempt >= 15) {
+      setTimeout(initAuth, 200);
     } else {
       setTimeout(() => tryInit(attempt + 1), 100);
     }
   };
-  
   tryInit();
 });
 
-// For debugging in console
 window.authDebug = {
   getCurrentPage,
   getCurrentUser,
   checkPermission,
-  hasAccessTo: function(page) {
-    return hasAccessTo(page);
-  },
-  getRole: function() {
+  hasAccessTo,
+  getRole: function () {
     return normalizeRole(sessionStorage.getItem('userRole'));
   },
-  getAllowedPages: function() {
+  getAllowedPages: function () {
     const role = normalizeRole(sessionStorage.getItem('userRole'));
     return PERMISSIONS[role] || [];
-  },
-  reload: function() {
-    window.location.reload();
   }
 };

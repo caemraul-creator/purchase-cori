@@ -35,46 +35,45 @@ const ROLE_NAMES = {
 
 /**
  * PERMISSIONS - Halaman mana saja yang boleh diakses setiap role
- * Ini harus match dengan struktur di auth.js
  */
 const PERMISSIONS = {
   admin: [
-    'dashboard.html',
-    'index.html',
-    'approval.html',
-    'done.html',
-    'rekap.html',
-    'rejected.html',
-    'print.html'
+    'dashboard',
+    'request',
+    'approval',
+    'done',
+    'rekap',
+    'rejected',
+    'print'
   ],
   viewer: [
-    'dashboard.html',
-    'index.html',
-    'print.html'
+    'dashboard',
+    'request',
+    'print'
   ],
   staff_a: [
-    'dashboard.html',
-    'index.html',
-    'rekap.html',
-    'rejected.html',
-    'print.html'
+    'dashboard',
+    'request',
+    'rekap',
+    'rejected',
+    'print'
   ],
   staff_b: [
-    'dashboard.html',
-    'index.html',
-    'approval.html',
-    'done.html',
-    'rekap.html',
-    'print.html'
+    'dashboard',
+    'request',
+    'approval',
+    'done',
+    'rekap',
+    'print'
   ],
   staff_c: [
-    'dashboard.html',
-    'index.html',
-    'approval.html',
-    'done.html',
-    'rekap.html',
-    'rejected.html',
-    'print.html'
+    'dashboard',
+    'request',
+    'approval',
+    'done',
+    'rekap',
+    'rejected',
+    'print'
   ]
 };
 
@@ -82,13 +81,10 @@ const PERMISSIONS = {
 // APPLICATION CONFIGURATION
 // =====================================================
 
-/**
- * APP_CONFIG - Konfigurasi umum aplikasi
- */
 const APP_CONFIG = {
   name: 'Purchase Request System',
   version: '1.0.0',
-  environment: (function() {
+  environment: (function () {
     const hostname = window.location.hostname;
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'development';
@@ -97,15 +93,13 @@ const APP_CONFIG = {
     }
     return 'production';
   })(),
-  
-  // Features
+
   features: {
     caching: true,
     retryOnError: true,
-    debug: false // Set ke true untuk verbose logging
+    debug: false
   },
 
-  // UI
   ui: {
     toastDuration: 3000,
     tablePageSize: 25,
@@ -113,10 +107,9 @@ const APP_CONFIG = {
     debounceDelay: 300
   },
 
-  // Cache
   cache: {
     enabled: true,
-    ttl: 5 * 60 * 1000 // 5 menit
+    ttl: 5 * 60 * 1000
   }
 };
 
@@ -124,26 +117,20 @@ const APP_CONFIG = {
 // DEBUG UTILITIES
 // =====================================================
 
-/**
- * Safe console logging untuk debug mode
- */
 const Logger = {
-  log: function(msg, data) {
+  log: function (msg, data) {
     if (APP_CONFIG.features.debug) {
       console.log(`[${new Date().toLocaleTimeString()}] ${msg}`, data || '');
     }
   },
-  
-  warn: function(msg, data) {
-    console.warn(`[${new Date().toLocaleTimeString()}] ⚠️  ${msg}`, data || '');
+  warn: function (msg, data) {
+    console.warn(`[${new Date().toLocaleTimeString()}] ⚠️ ${msg}`, data || '');
   },
-  
-  error: function(msg, data) {
+  error: function (msg, data) {
     console.error(`[${new Date().toLocaleTimeString()}] ❌ ${msg}`, data || '');
   },
-  
-  info: function(msg, data) {
-    console.info(`[${new Date().toLocaleTimeString()}] ℹ️  ${msg}`, data || '');
+  info: function (msg, data) {
+    console.info(`[${new Date().toLocaleTimeString()}] ℹ️ ${msg}`, data || '');
   }
 };
 
@@ -151,14 +138,12 @@ const Logger = {
 // VALIDATION
 // =====================================================
 
-// Cek config di console saat load
 (function validateConfig() {
   const errors = [];
-  
   if (!API_URL) errors.push('API_URL tidak defined');
   if (!ROLE_NAMES || Object.keys(ROLE_NAMES).length === 0) errors.push('ROLE_NAMES kosong');
   if (!PERMISSIONS || Object.keys(PERMISSIONS).length === 0) errors.push('PERMISSIONS kosong');
-  
+
   if (errors.length > 0) {
     console.error('❌ CONFIG VALIDATION FAILED:');
     errors.forEach(e => console.error(`  - ${e}`));
@@ -167,5 +152,4 @@ const Logger = {
     console.log(`Environment: ${APP_CONFIG.environment}`);
     console.log(`API URL: ${API_URL.split('?')[0]}`);
   }
-
 })();
