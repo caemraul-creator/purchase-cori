@@ -24,7 +24,7 @@ function setCachedData(key, data) {
 }
 
 // Global Loading Indicator
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function () {
   if (!document.getElementById('globalLoading')) {
     const loader = document.createElement('div');
     loader.id = 'globalLoading';
@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function showLoading(show = true) {
+function showLoading(show) {
+  if (show === undefined) show = true;
   const loader = document.getElementById('globalLoading');
   if (loader) loader.style.display = show ? 'flex' : 'none';
 }
@@ -49,12 +50,13 @@ function showLoading(show = true) {
 // 2. MAIN LOAD FUNCTION
 // =========================================
 
-function loadDataOptimized(callback, sheetName = '') {
+function loadDataOptimized(callback, sheetName) {
+  if (sheetName === undefined) sheetName = '';
   const cacheKey = sheetName || 'main';
 
   const cached = getCachedData(cacheKey);
   if (cached) {
-    if (callback) setTimeout(() => callback(cached), 0);
+    if (callback) setTimeout(function () { callback(cached); }, 0);
     return;
   }
 
@@ -68,7 +70,7 @@ function loadDataOptimized(callback, sheetName = '') {
 
   const timestamp = Date.now();
   const random = Math.random().toString(36).substr(2, 9);
-  const cbName = `cb_${cacheKey.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}_${random}`;
+  const cbName = 'cb_' + cacheKey.replace(/[^a-zA-Z0-9]/g, '_') + '_' + timestamp + '_' + random;
 
   let isResolved = false;
   let timeoutId = null;
@@ -88,14 +90,14 @@ function loadDataOptimized(callback, sheetName = '') {
       const callbacks = pendingRequests[cacheKey] || [];
       delete pendingRequests[cacheKey];
 
-      callbacks.forEach(cb => {
+      callbacks.forEach(function (cb) {
         if (cb && typeof cb === 'function') {
           try { cb(data); } catch (err) { console.error('Error in callback:', err); }
         }
       });
     } catch (err) {
-      console.error(`[${cbName}] Error:`, err);
-      showToast(`Error: ${err.message}`, 'error');
+      console.error('[' + cbName + '] Error:', err);
+      showToast('Error: ' + err.message, 'error');
     } finally {
       cleanup(cbName);
       showLoading(false);
@@ -115,22 +117,22 @@ function loadDataOptimized(callback, sheetName = '') {
       const delayMs = 1000 * retryCount;
       cleanup(cbName);
       showLoading(false);
-      setTimeout(() => {
+      setTimeout(function () {
         loadDataOptimized(callback, sheetName);
       }, delayMs);
     } else {
-      showToast(`Gagal memuat data dari ${sheetName || 'main'}`, 'error');
+      showToast('Gagal memuat data dari ' + (sheetName || 'main'), 'error');
       cleanup(cbName);
       showLoading(false);
     }
   }
 
-  timeoutId = setTimeout(() => {
+  timeoutId = setTimeout(function () {
     if (!isResolved) handleError('JSONP Timeout (15s)');
   }, 15000);
 
   const script = document.createElement('script');
-  script.id = `script-${cbName}`;
+  script.id = 'script-' + cbName;
   script.async = true;
 
   try {
@@ -146,7 +148,7 @@ function loadDataOptimized(callback, sheetName = '') {
     return;
   }
 
-  script.onerror = () => {
+  script.onerror = function () {
     if (!isResolved) handleError('Script load failed');
   };
 
@@ -163,8 +165,8 @@ function loadMultipleSheets(sheets, onAllLoaded) {
     return;
   }
 
-  sheets.forEach(sheet => {
-    loadDataOptimized((data) => {
+  sheets.forEach(function (sheet) {
+    loadDataOptimized(function (data) {
       results[sheet] = data;
       loadedCount++;
       if (loadedCount === totalSheets && onAllLoaded) {
@@ -176,7 +178,7 @@ function loadMultipleSheets(sheets, onAllLoaded) {
 
 function cleanup(cbName) {
   delete window[cbName];
-  const scriptEl = document.getElementById(`script-${cbName}`);
+  const scriptEl = document.getElementById('script-' + cbName);
   if (scriptEl && scriptEl.parentNode) {
     scriptEl.parentNode.removeChild(scriptEl);
   }
@@ -191,8 +193,8 @@ function formatDate(v) {
   try {
     const d = new Date(v);
     if (isNaN(d.getTime())) return v;
-    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-  } catch { return v; }
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+  } catch (e) { return v; }
 }
 
 function formatDateTime(v) {
@@ -200,29 +202,30 @@ function formatDateTime(v) {
   try {
     const d = new Date(v);
     if (isNaN(d.getTime())) return v;
-    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  } catch { return v; }
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  } catch (e) { return v; }
 }
 
 function formatRupiah(v) {
   if (v === '' || v == null || isNaN(v)) return '';
   try {
     return 'Rp ' + parseFloat(v).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  } catch { return v; }
+  } catch (e) { return v; }
 }
 
 function formatNumber(v) {
   if (v === '' || v == null || isNaN(v)) return '';
   try {
     return parseFloat(v).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  } catch { return v; }
+  } catch (e) { return v; }
 }
 
 // =========================================
 // 4. UI UTILS
 // =========================================
 
-function lazyRenderRows(rowsHtmlArray, tbody, batchSize = 50) {
+function lazyRenderRows(rowsHtmlArray, tbody, batchSize) {
+  if (batchSize === undefined) batchSize = 50;
   if (!Array.isArray(rowsHtmlArray) || !tbody) return;
   tbody.innerHTML = '';
   if (rowsHtmlArray.length === 0) return;
@@ -240,11 +243,13 @@ function lazyRenderRows(rowsHtmlArray, tbody, batchSize = 50) {
 
 function debounceSearch(func, wait) {
   let timeout = null;
-  return function executedFunction(...args) {
+  return function executedFunction() {
+    var args = arguments;
+    var context = this;
     clearTimeout(timeout);
-    timeout = setTimeout(() => {
+    timeout = setTimeout(function () {
       timeout = null;
-      func.apply(this, args);
+      func.apply(context, args);
     }, wait);
   };
 }
@@ -253,7 +258,10 @@ function debounceSearch(func, wait) {
 // 5. TOAST NOTIFICATION
 // =========================================
 
-function showToast(msg, type = 'success', duration = 3000) {
+function showToast(msg, type, duration) {
+  if (type === undefined) type = 'success';
+  if (duration === undefined) duration = 3000;
+
   let toast = document.getElementById('toast');
   if (!toast) {
     toast = document.createElement('div');
@@ -275,7 +283,7 @@ function showToast(msg, type = 'success', duration = 3000) {
   toast.style.zIndex = '9999';
   toast.style.transition = 'all 0.3s ease';
 
-  setTimeout(() => {
+  setTimeout(function () {
     toast.classList.remove('show');
   }, duration);
 }

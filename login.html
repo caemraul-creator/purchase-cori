@@ -455,177 +455,177 @@
   <script src="config.js"></script>
   <script src="ui-helper.js"></script>
   <script src="auth.js"></script>
+
+  <!-- LOGIN SCRIPT - DIPERBAIKI -->
   <script>
-    // =====================================================
-    // LOGIN FORM HANDLER
-    // =====================================================
+    (function () {
+      'use strict';
 
-    const messageDiv = document.getElementById('message');
-    const messageText = messageDiv.querySelector('.message-text');
-    const messageIcon = messageDiv.querySelector('.message-icon');
-    const loginForm = document.getElementById('loginForm');
-    const btnLogin = document.getElementById('btnLogin');
-
-    function showMessage(text, type = 'error') {
-      messageText.textContent = text;
-      messageIcon.textContent = type === 'error' ? '❌' : '✅';
-      messageDiv.className = `message ${type} show`;
-      setTimeout(() => {
-        messageDiv.classList.remove('show');
-      }, 4000);
-    }
-
-    function setLoading(isLoading) {
-      btnLogin.disabled = isLoading;
-      btnLogin.innerHTML = isLoading ? '' : 'Sign In';
-      btnLogin.classList.toggle('loading', isLoading);
-    }
-
-    loginForm.addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!username || !password) {
-        showMessage('⚠️ Please fill in all required fields', 'error');
+      // CEK APAKAH SUDAH LOGIN
+      if (sessionStorage.getItem('isLoggedIn') === 'true') {
+        console.log('✅ Already logged in, redirecting to index');
+        window.location.href = 'index.html';
         return;
       }
 
-      if (typeof API_URL === 'undefined' || !API_URL) {
-        showMessage('❌ Configuration error. Please contact administrator.', 'error');
-        console.error('API_URL undefined in config.js');
-        return;
+      console.log('🔐 Login page loaded');
+
+      var messageDiv = document.getElementById('message');
+      var messageText = messageDiv.querySelector('.message-text');
+      var messageIcon = messageDiv.querySelector('.message-icon');
+      var loginForm = document.getElementById('loginForm');
+      var btnLogin = document.getElementById('btnLogin');
+
+      function showMessage(text, type) {
+        type = type || 'error';
+        messageText.textContent = text;
+        messageIcon.textContent = type === 'error' ? '❌' : '✅';
+        messageDiv.className = 'message ' + type + ' show';
+        setTimeout(function () {
+          messageDiv.classList.remove('show');
+        }, 4000);
       }
 
-      setLoading(true);
-
-      try {
-        const response = await loginAPI(username, password);
-        console.log('Login response:', response);
-
-        if (response && response.success) {
-          handleSuccess(response);
-        } else {
-          const errorMsg = response?.message || 'Invalid username or password';
-          showMessage('❌ ' + errorMsg, 'error');
-        }
-      } catch (err) {
-        console.error('Login error:', err);
-        showMessage('❌ Connection failed: ' + err.message, 'error');
-      } finally {
-        setLoading(false);
+      function setLoading(isLoading) {
+        btnLogin.disabled = isLoading;
+        btnLogin.innerHTML = isLoading ? '' : 'Sign In';
+        btnLogin.classList.toggle('loading', isLoading);
       }
-    });
 
-    function loginAPI(username, password) {
-      return new Promise((resolve, reject) => {
-        const callbackName = 'cb_login_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        let isResolved = false;
-        let timeoutId = null;
+      loginForm.addEventListener('submit', function (e) {
+        e.preventDefault();
 
-        window[callbackName] = function (response) {
-          if (isResolved) return;
-          isResolved = true;
-          if (timeoutId) clearTimeout(timeoutId);
-          cleanup();
-          resolve(response);
-        };
+        var username = document.getElementById('username').value.trim();
+        var password = document.getElementById('password').value;
 
-        timeoutId = setTimeout(() => {
-          if (!isResolved) {
-            isResolved = true;
-            cleanup();
-            reject(new Error('Server timeout - Please try again'));
-          }
-        }, 15000);
-
-        function cleanup() {
-          if (timeoutId) clearTimeout(timeoutId);
-          delete window[callbackName];
-          const scriptEl = document.getElementById('login-jsonp');
-          if (scriptEl && scriptEl.parentNode) {
-            scriptEl.parentNode.removeChild(scriptEl);
-          }
+        if (!username || !password) {
+          showMessage('⚠️ Please fill in all required fields', 'error');
+          return;
         }
 
-        try {
-          const url = new URL(API_URL);
-          const params = new URLSearchParams({
-            action: 'login',
-            username: username,
-            password: password,
-            callback: callbackName,
-            timestamp: Date.now()
+        if (typeof API_URL === 'undefined' || !API_URL) {
+          showMessage('❌ Configuration error. Please contact administrator.', 'error');
+          console.error('API_URL undefined in config.js');
+          return;
+        }
+
+        setLoading(true);
+
+        loginAPI(username, password)
+          .then(function (response) {
+            console.log('Login response:', response);
+            if (response && response.success) {
+              handleSuccess(response);
+            } else {
+              var errorMsg = response && response.message ? response.message : 'Invalid username or password';
+              showMessage('❌ ' + errorMsg, 'error');
+            }
+          })
+          .catch(function (err) {
+            console.error('Login error:', err);
+            showMessage('❌ Connection failed: ' + err.message, 'error');
+          })
+          .finally(function () {
+            setLoading(false);
           });
+      });
 
-          const fullUrl = url.toString() + (url.search ? '&' : '?') + params.toString();
-          console.log('🔐 Login URL:', fullUrl);
+      function loginAPI(username, password) {
+        return new Promise(function (resolve, reject) {
+          var callbackName = 'cb_login_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          var isResolved = false;
+          var timeoutId = null;
 
-          const script = document.createElement('script');
-          script.id = 'login-jsonp';
-          script.src = fullUrl;
-          script.async = true;
-          script.crossOrigin = 'anonymous';
+          window[callbackName] = function (response) {
+            if (isResolved) return;
+            isResolved = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            cleanup();
+            resolve(response);
+          };
 
-          script.onerror = function (err) {
-            console.error('Script load error:', err);
+          timeoutId = setTimeout(function () {
             if (!isResolved) {
               isResolved = true;
               cleanup();
-              reject(new Error('Network error - Cannot connect to server'));
+              reject(new Error('Server timeout - Please try again'));
             }
-          };
+          }, 15000);
 
-          document.head.appendChild(script);
-        } catch (err) {
-          console.error('Error creating login request:', err);
-          cleanup();
-          reject(err);
-        }
-      });
-    }
+          function cleanup() {
+            if (timeoutId) clearTimeout(timeoutId);
+            delete window[callbackName];
+            var scriptEl = document.getElementById('login-jsonp');
+            if (scriptEl && scriptEl.parentNode) {
+              scriptEl.parentNode.removeChild(scriptEl);
+            }
+          }
 
-    function handleSuccess(response) {
-      showMessage('✅ Login successful! Redirecting...', 'success');
+          try {
+            var url = new URL(API_URL);
+            var params = new URLSearchParams({
+              action: 'login',
+              username: username,
+              password: password,
+              callback: callbackName,
+              timestamp: Date.now()
+            });
 
-      const rawRole = response.user?.role || 'viewer';
-      const username = response.user?.username || 'User';
-      const fullName = response.user?.fullName || username;
+            var fullUrl = url.toString() + (url.search ? '&' : '?') + params.toString();
+            console.log('🔐 Login URL:', fullUrl);
 
-      sessionStorage.setItem('username', username);
-      sessionStorage.setItem('fullName', fullName);
-      sessionStorage.setItem('userRole', rawRole);
-      sessionStorage.setItem('isLoggedIn', 'true');
-      sessionStorage.setItem('loginTime', new Date().toISOString());
-      sessionStorage.setItem('currentPage', 'dashboard');
+            var script = document.createElement('script');
+            script.id = 'login-jsonp';
+            script.src = fullUrl;
+            script.async = true;
 
-      console.log('✅ Session saved:', {
-        username,
-        role: rawRole,
-        isLoggedIn: sessionStorage.getItem('isLoggedIn')
-      });
+            script.onerror = function () {
+              if (!isResolved) {
+                isResolved = true;
+                cleanup();
+                reject(new Error('Network error - Cannot connect to server'));
+              }
+            };
 
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 800);
-    }
-
-    window.addEventListener('load', function () {
-      console.log('Login page loaded');
-      console.log('Session check:', sessionStorage.getItem('isLoggedIn'));
-
-      if (sessionStorage.getItem('isLoggedIn') === 'true') {
-        showMessage('🔄 Already logged in, redirecting...', 'success');
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 500);
+            document.head.appendChild(script);
+          } catch (err) {
+            console.error('Error creating login request:', err);
+            cleanup();
+            reject(err);
+          }
+        });
       }
 
-      setTimeout(() => {
+      function handleSuccess(response) {
+        showMessage('✅ Login successful! Redirecting...', 'success');
+
+        var rawRole = (response.user && response.user.role) ? response.user.role : 'viewer';
+        var username = (response.user && response.user.username) ? response.user.username : 'User';
+        var fullName = (response.user && response.user.fullname) ? response.user.fullname : username;
+
+        sessionStorage.setItem('username', username);
+        sessionStorage.setItem('fullName', fullName);
+        sessionStorage.setItem('userRole', rawRole);
+        sessionStorage.setItem('isLoggedIn', 'true');
+        sessionStorage.setItem('loginTime', new Date().toISOString());
+        sessionStorage.setItem('currentPage', 'dashboard');
+
+        console.log('✅ Session saved:', {
+          username: username,
+          role: rawRole,
+          isLoggedIn: sessionStorage.getItem('isLoggedIn')
+        });
+
+        setTimeout(function () {
+          window.location.href = 'index.html';
+        }, 800);
+      }
+
+      setTimeout(function () {
         document.getElementById('username').focus();
       }, 300);
-    });
+
+    })();
   </script>
 
 </body>

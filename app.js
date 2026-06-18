@@ -6,7 +6,24 @@
  */
 
 // ============================================
-// 0. PASTIKAN FUNGSI GLOBAL TERSEDIA
+// 0. CEK LOGIN DENGAN AMAN
+// ============================================
+
+(function () {
+  var isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+  console.log('🔐 App.js - isLoggedIn:', isLoggedIn);
+
+  if (!isLoggedIn) {
+    console.log('❌ Not logged in, redirecting to login.html');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  console.log('✅ User is logged in, initializing app...');
+})();
+
+// ============================================
+// 0.5. PASTIKAN FUNGSI GLOBAL TERSEDIA
 // ============================================
 
 if (typeof normalizeRole === 'undefined') {
@@ -26,7 +43,7 @@ if (typeof checkPermission === 'undefined') {
 // 1. KONFIGURASI DASAR
 // ============================================
 
-const HIDDEN_COLUMNS = {
+var HIDDEN_COLUMNS = {
   request: ['DoneBy', 'DoneDate', 'CreatedAt', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'PartOf', 'Requester'],
   approval: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason'],
   done: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason'],
@@ -34,20 +51,20 @@ const HIDDEN_COLUMNS = {
   rejected: ['DoneBy', 'DoneDate', 'Price', 'Nominal', 'LastBuyingDate', 'Aksi', 'CreatedAt', 'ApprovedBy', 'ApprovedDate']
 };
 
-const NUMBER_COLUMNS = ['Qty'];
-const CURRENCY_COLUMNS = ['Price', 'Nominal'];
-const DATE_COLUMNS = ['LastBuyingDate', 'OrderDate'];
-const DATETIME_COLUMNS = ['CreatedAt', 'SubmissionDate', 'ApprovedDate', 'DoneDate', 'RejectedDate'];
+var NUMBER_COLUMNS = ['Qty'];
+var CURRENCY_COLUMNS = ['Price', 'Nominal'];
+var DATE_COLUMNS = ['LastBuyingDate', 'OrderDate'];
+var DATETIME_COLUMNS = ['CreatedAt', 'SubmissionDate', 'ApprovedDate', 'DoneDate', 'RejectedDate'];
 
-let allData = {};
-let filteredData = {};
-let headers = {};
-let currentPage = {};
-let pageSize = 100;
-let editMode = false;
-let currentEditId = null;
+var allData = {};
+var filteredData = {};
+var headers = {};
+var currentPage = {};
+var pageSize = 100;
+var editMode = false;
+var currentEditId = null;
 
-const MENU_DEF = [
+var MENU_DEF = [
   { id: 'request', page: 'request', icon: '📋', title: 'New Request', desc: 'Create and submit new purchase requests.' },
   { id: 'approval', page: 'approval', icon: '📬', title: 'Approval Hub', desc: 'Central portal to review and approve requests.' },
   { id: 'done', page: 'done', icon: '📦', title: 'Fulfillment', desc: 'Track and finalize procurement steps.' },
@@ -56,7 +73,7 @@ const MENU_DEF = [
   { id: 'print', page: 'print', icon: '📥', title: 'Export & Print', desc: 'Download data purchase request to PDF/Excel.' }
 ];
 
-['request', 'approval', 'done', 'rekap', 'rejected'].forEach(page => {
+['request', 'approval', 'done', 'rekap', 'rejected'].forEach(function (page) {
   allData[page] = [];
   filteredData[page] = [];
   headers[page] = [];
@@ -68,18 +85,18 @@ const MENU_DEF = [
 // ============================================
 
 function renderPage(page) {
-  console.log(`📄 Rendering page: ${page}`);
+  console.log('📄 Rendering page: ' + page);
 
-  document.querySelectorAll('.page-container').forEach(el => {
+  document.querySelectorAll('.page-container').forEach(function (el) {
     el.style.display = 'none';
   });
 
-  const container = document.getElementById(`page-${page}`);
+  var container = document.getElementById('page-' + page);
   if (container) {
     container.style.display = 'block';
     sessionStorage.setItem('currentPage', page);
   } else {
-    console.error(`Page container not found: page-${page}`);
+    console.error('Page container not found: page-' + page);
     return;
   }
 
@@ -91,7 +108,7 @@ function renderPage(page) {
     case 'rekap': renderRekapPage(); break;
     case 'rejected': renderRejectedPage(); break;
     case 'print': renderPrintPage(); break;
-    default: console.warn(`Unknown page: ${page}`);
+    default: console.warn('Unknown page: ' + page);
   }
 
   if (typeof renderUserStatus === 'function') {
@@ -104,17 +121,17 @@ function renderPage(page) {
 // ============================================
 
 function renderDashboard() {
-  const container = document.getElementById('page-dashboard');
+  var container = document.getElementById('page-dashboard');
   if (!container) return;
 
-  const hour = new Date().getHours();
-  let greet = 'Halo';
+  var hour = new Date().getHours();
+  var greet = 'Halo';
   if (hour < 11) greet = 'Selamat Pagi';
   else if (hour < 15) greet = 'Selamat Siang';
   else if (hour < 19) greet = 'Selamat Sore';
   else greet = 'Selamat Malam';
 
-  const name = sessionStorage.getItem('fullName') || sessionStorage.getItem('username') || 'Rekan';
+  var name = sessionStorage.getItem('fullName') || sessionStorage.getItem('username') || 'Rekan';
 
   container.innerHTML = `
     <div class="header">
@@ -172,16 +189,17 @@ function renderDashboard() {
 }
 
 function renderMenu() {
-  const container = document.getElementById('menuContainer');
+  var container = document.getElementById('menuContainer');
   if (!container) return;
 
-  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  const role = normalizeRole(rawRole);
+  var rawRole = sessionStorage.getItem('userRole') || 'viewer';
+  var role = normalizeRole(rawRole);
 
-  let allowedPages = [];
+  var allowedPages = [];
   if (typeof PERMISSIONS !== 'undefined') {
-    const possibleKeys = [role, rawRole.toLowerCase()];
-    for (const key of possibleKeys) {
+    var possibleKeys = [role, rawRole.toLowerCase()];
+    for (var i = 0; i < possibleKeys.length; i++) {
+      var key = possibleKeys[i];
       if (PERMISSIONS[key]) {
         allowedPages = PERMISSIONS[key];
         break;
@@ -190,34 +208,34 @@ function renderMenu() {
   }
 
   if (allowedPages.length === 0) {
-    allowedPages = MENU_DEF.map(m => m.page);
+    allowedPages = MENU_DEF.map(function (m) { return m.page; });
   }
 
-  const html = MENU_DEF
-    .filter(menu => allowedPages.includes(menu.page))
-    .map(menu => `
-      <div class="menu-item" onclick="navigateTo('${menu.page}')" style="background:white;border-radius:16px;padding:24px;border:1px solid #e5e7eb;display:flex;align-items:center;gap:15px;cursor:pointer;transition:all 0.2s;">
-        <div class="menu-item-icon" style="width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;background:#f3f4f6;">${menu.icon}</div>
-        <div class="menu-item-info">
-          <h3 style="margin:0 0 4px 0;font-size:1.1rem;">${menu.title}</h3>
-          <p style="margin:0;font-size:0.85rem;color:#6b7280;">${menu.desc}</p>
-        </div>
-        <div class="menu-item-arrow" style="margin-left:auto;color:#d1d5db;font-weight:bold;">→</div>
-      </div>
-    `)
+  var html = MENU_DEF
+    .filter(function (menu) { return allowedPages.indexOf(menu.page) !== -1; })
+    .map(function (menu) {
+      return '<div class="menu-item" onclick="navigateTo(\'' + menu.page + '\')" style="background:white;border-radius:16px;padding:24px;border:1px solid #e5e7eb;display:flex;align-items:center;gap:15px;cursor:pointer;transition:all 0.2s;">' +
+        '<div class="menu-item-icon" style="width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;background:#f3f4f6;">' + menu.icon + '</div>' +
+        '<div class="menu-item-info">' +
+        '<h3 style="margin:0 0 4px 0;font-size:1.1rem;">' + menu.title + '</h3>' +
+        '<p style="margin:0;font-size:0.85rem;color:#6b7280;">' + menu.desc + '</p>' +
+        '</div>' +
+        '<div class="menu-item-arrow" style="margin-left:auto;color:#d1d5db;font-weight:bold;">→</div>' +
+        '</div>';
+    })
     .join('');
 
   container.innerHTML = html || '<p style="color:#6b7280;">Tidak ada menu tersedia</p>';
 }
 
 function loadDashboardStats() {
-  let stats = { pending: 0, approved: 0, done: 0, rejected: 0 };
-  let seenIds = new Set();
+  var stats = { pending: 0, approved: 0, done: 0, rejected: 0 };
+  var seenIds = new Set();
 
-  loadMultipleSheets(['', 'done', 'rejected'], (results) => {
-    (results[''] || []).forEach(item => {
+  loadMultipleSheets(['', 'done', 'rejected'], function (results) {
+    (results[''] || []).forEach(function (item) {
       if (item && item.ID && !seenIds.has(item.ID)) {
-        const status = (item.Status || '').toLowerCase().trim();
+        var status = (item.Status || '').toLowerCase().trim();
         if (stats.hasOwnProperty(status)) {
           stats[status]++;
           seenIds.add(item.ID);
@@ -225,11 +243,11 @@ function loadDashboardStats() {
       }
     });
 
-    (results['done'] || []).forEach(item => {
+    (results['done'] || []).forEach(function (item) {
       if (item && item.ID) stats.done++;
     });
 
-    (results['rejected'] || []).forEach(item => {
+    (results['rejected'] || []).forEach(function (item) {
       if (item && item.ID) stats.rejected++;
     });
 
@@ -245,7 +263,7 @@ function loadDashboardStats() {
 // ============================================
 
 function renderRequestPage() {
-  const container = document.getElementById('page-request');
+  var container = document.getElementById('page-request');
   if (!container) return;
 
   container.innerHTML = `
@@ -297,28 +315,31 @@ function renderRequestPage() {
     </div>
   `;
 
-  document.getElementById('btnAdd')?.addEventListener('click', () => openRequestModal());
-  document.getElementById('pageSize-request')?.addEventListener('change', (e) => {
+  document.getElementById('btnAdd').addEventListener('click', function () { openRequestModal(); });
+  document.getElementById('pageSize-request').addEventListener('change', function (e) {
     pageSize = Number(e.target.value);
     currentPage['request'] = 1;
     loadRequestData();
   });
-  document.getElementById('search-request')?.addEventListener('input', debounceSearch(onRequestSearch, 300));
+  document.getElementById('search-request').addEventListener('input', debounceSearch(onRequestSearch, 300));
 
   loadRequestData();
 }
 
-function loadRequestData(forceRefresh = false) {
+function loadRequestData(forceRefresh) {
+  if (forceRefresh === undefined) forceRefresh = false;
   if (forceRefresh && window.dataCache) {
     delete window.dataCache['main'];
   }
 
-  loadDataOptimized((data) => {
+  loadDataOptimized(function (data) {
     allData['request'] = data || [];
-    filteredData['request'] = [...allData['request']];
+    filteredData['request'] = allData['request'].slice();
 
     if (allData['request'].length > 0) {
-      headers['request'] = Object.keys(allData['request'][0] || {}).filter(h => !HIDDEN_COLUMNS.request.includes(h));
+      headers['request'] = Object.keys(allData['request'][0] || {}).filter(function (h) {
+        return HIDDEN_COLUMNS.request.indexOf(h) === -1;
+      });
     } else {
       headers['request'] = [];
     }
@@ -330,98 +351,101 @@ function loadRequestData(forceRefresh = false) {
 }
 
 function onRequestSearch(e) {
-  const q = e.target.value.toLowerCase();
+  var q = e.target.value.toLowerCase();
   currentPage['request'] = 1;
   if (!q.trim()) {
-    filteredData['request'] = [...allData['request']];
+    filteredData['request'] = allData['request'].slice();
   } else {
-    filteredData['request'] = allData['request'].filter(r =>
-      headers['request'].map(h => r[h]).join(' ').toLowerCase().includes(q)
-    );
+    filteredData['request'] = allData['request'].filter(function (r) {
+      var text = headers['request'].map(function (h) { return r[h]; }).join(' ').toLowerCase();
+      return text.indexOf(q) !== -1;
+    });
   }
   renderRequestTable();
   renderRequestPagination();
 }
 
 function renderRequestTable() {
-  const thead = document.getElementById('request-thead');
-  const tbody = document.getElementById('request-tbody');
+  var thead = document.getElementById('request-thead');
+  var tbody = document.getElementById('request-tbody');
   if (!thead || !tbody) return;
 
-  const headerHtml = headers['request'].map(h => {
-    let html = `<th>${h}</th>`;
+  var headerHtml = headers['request'].map(function (h) {
+    var html = '<th>' + h + '</th>';
     if (h === 'ID') html += '<th>Aksi</th>';
     return html;
   }).join('');
-  thead.innerHTML = `<tr>${headerHtml}</tr>`;
+  thead.innerHTML = '<tr>' + headerHtml + '</tr>';
 
-  const start = (currentPage['request'] - 1) * pageSize;
-  const pageData = filteredData['request'].slice(start, start + pageSize);
+  var start = (currentPage['request'] - 1) * pageSize;
+  var pageData = filteredData['request'].slice(start, start + pageSize);
 
   if (!pageData.length) {
-    tbody.innerHTML = `<tr><td colspan="${headers['request'].length + 1}" class="text-center">Data tidak ditemukan</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="' + (headers['request'].length + 1) + '" class="text-center">Data tidak ditemukan</td></tr>';
     return;
   }
 
-  const rowsHtml = pageData.map(row => {
-    let cellsHtml = headers['request'].map(h => {
-      let v = row[h] ?? '';
-      let cls = '';
+  var rowsHtml = pageData.map(function (row) {
+    var cellsHtml = headers['request'].map(function (h) {
+      var v = row[h] || '';
+      var cls = '';
 
-      if (DATETIME_COLUMNS.includes(h)) { v = formatDateTime(v); cls = 'text-center'; }
-      else if (DATE_COLUMNS.includes(h)) { v = formatDate(v); cls = 'text-center'; }
-      if (NUMBER_COLUMNS.includes(h)) { v = formatNumber(v); cls = 'text-right'; }
-      if (CURRENCY_COLUMNS.includes(h)) { v = formatRupiah(v); cls = 'text-right'; }
+      if (DATETIME_COLUMNS.indexOf(h) !== -1) { v = formatDateTime(v); cls = 'text-center'; }
+      else if (DATE_COLUMNS.indexOf(h) !== -1) { v = formatDate(v); cls = 'text-center'; }
+      if (NUMBER_COLUMNS.indexOf(h) !== -1) { v = formatNumber(v); cls = 'text-right'; }
+      if (CURRENCY_COLUMNS.indexOf(h) !== -1) { v = formatRupiah(v); cls = 'text-right'; }
       if (h === 'Items' || h === 'Description') cls += ' truncate';
 
-      let cell = `<td class="${cls}" title="${v}">${v}</td>`;
+      var cell = '<td class="' + cls + '" title="' + v + '">' + v + '</td>';
       if (h === 'Status') {
-        const statusClass = String(v).toLowerCase();
-        cell = `<td class="text-center"><span class="status ${statusClass}">${v}</span></td>`;
+        var statusClass = String(v).toLowerCase();
+        cell = '<td class="text-center"><span class="status ' + statusClass + '">' + v + '</span></td>';
       }
       if (h === 'ID') {
-        cell += `<td class="text-center" style="white-space:nowrap;">
-          <button class="btn-secondary btn-xs" onclick="openRequestEdit('${row.ID}')" title="Edit">✏️</button>
-        </td>`;
+        cell += '<td class="text-center" style="white-space:nowrap;">' +
+          '<button class="btn-secondary btn-xs" onclick="openRequestEdit(\'' + row.ID + '\')" title="Edit">✏️</button>' +
+          '</td>';
       }
       return cell;
     }).join('');
-    return `<tr>${cellsHtml}</tr>`;
+    return '<tr>' + cellsHtml + '</tr>';
   });
 
   lazyRenderRows(rowsHtml, tbody, 50);
 }
 
 function renderRequestPagination() {
-  const container = document.getElementById('pagination-request');
-  const info = document.getElementById('infoText-request');
+  var container = document.getElementById('pagination-request');
+  var info = document.getElementById('infoText-request');
   if (!container || !info) return;
 
-  const total = filteredData['request'].length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const start = total === 0 ? 0 : (currentPage['request'] - 1) * pageSize + 1;
-  const end = Math.min(start + pageSize - 1, total);
-  info.textContent = `Menampilkan ${start}–${end} dari ${total} data`;
+  var total = filteredData['request'].length;
+  var totalPages = Math.max(1, Math.ceil(total / pageSize));
+  var start = total === 0 ? 0 : (currentPage['request'] - 1) * pageSize + 1;
+  var end = Math.min(start + pageSize - 1, total);
+  info.textContent = 'Menampilkan ' + start + '–' + end + ' dari ' + total + ' data';
 
   container.innerHTML = '';
   if (currentPage['request'] > 1) {
-    const prevBtn = document.createElement('button');
+    var prevBtn = document.createElement('button');
     prevBtn.textContent = '←';
     prevBtn.className = 'pagination-btn';
-    prevBtn.onclick = () => { currentPage['request']--; renderRequestTable(); renderRequestPagination(); };
+    prevBtn.onclick = function () { currentPage['request']--; renderRequestTable(); renderRequestPagination(); };
     container.appendChild(prevBtn);
   }
 
-  for (let i = 1; i <= totalPages; i++) {
+  for (var i = 1; i <= totalPages; i++) {
     if (i === 1 || i === totalPages || (i >= currentPage['request'] - 2 && i <= currentPage['request'] + 2)) {
-      const b = document.createElement('button');
+      var b = document.createElement('button');
       b.textContent = i;
       b.className = 'pagination-btn';
       if (i === currentPage['request']) b.classList.add('active');
-      b.onclick = () => { currentPage['request'] = i; renderRequestTable(); renderRequestPagination(); };
+      b.onclick = (function (page) {
+        return function () { currentPage['request'] = page; renderRequestTable(); renderRequestPagination(); };
+      })(i);
       container.appendChild(b);
     } else if (i === currentPage['request'] - 3 || i === currentPage['request'] + 3) {
-      const ellipsis = document.createElement('span');
+      var ellipsis = document.createElement('span');
       ellipsis.textContent = '...';
       ellipsis.style.margin = '0 4px';
       ellipsis.style.color = '#6b7280';
@@ -430,10 +454,10 @@ function renderRequestPagination() {
   }
 
   if (currentPage['request'] < totalPages) {
-    const nextBtn = document.createElement('button');
+    var nextBtn = document.createElement('button');
     nextBtn.textContent = '→';
     nextBtn.className = 'pagination-btn';
-    nextBtn.onclick = () => { currentPage['request']++; renderRequestTable(); renderRequestPagination(); };
+    nextBtn.onclick = function () { currentPage['request']++; renderRequestTable(); renderRequestPagination(); };
     container.appendChild(nextBtn);
   }
 }
@@ -443,7 +467,7 @@ function renderRequestPagination() {
 // ============================================
 
 function openRequestModal(row) {
-  const modal = document.getElementById('requestModal');
+  var modal = document.getElementById('requestModal');
   if (!modal) return;
 
   if (row) {
@@ -459,31 +483,32 @@ function openRequestModal(row) {
 }
 
 function closeRequestModal() {
-  document.getElementById('requestModal')?.classList.remove('show');
+  var modal = document.getElementById('requestModal');
+  if (modal) modal.classList.remove('show');
 }
 
 function populateRequestForm(row) {
   document.getElementById('formID').value = row.ID || '';
-  ['Department', 'Office', 'Items', 'PartOf', 'Description', 'Qty', 'Unit', 'Price', 'Priority', 'OrderBy'].forEach(name => {
-    const el = document.querySelector(`[name="${name}"]`);
+  ['Department', 'Office', 'Items', 'PartOf', 'Description', 'Qty', 'Unit', 'Price', 'Priority', 'OrderBy'].forEach(function (name) {
+    var el = document.querySelector('[name="' + name + '"]');
     if (el) el.value = row[name] || '';
   });
 
   handleLastBuyingDateFallback(row.LastBuyingDate || '');
 
-  const orderDateInput = document.querySelector('[name="OrderDate"]');
+  var orderDateInput = document.querySelector('[name="OrderDate"]');
   if (orderDateInput) {
     orderDateInput.value = parseDateForInput(row.OrderDate);
   }
 }
 
 function clearRequestForm() {
-  const form = document.getElementById('prForm');
+  var form = document.getElementById('prForm');
   if (form) form.reset();
   document.getElementById('formID').value = '';
 
-  const dateInput = document.getElementById('lastBuyingDate');
-  const optionSelect = document.getElementById('lastBuyingOption');
+  var dateInput = document.getElementById('lastBuyingDate');
+  var optionSelect = document.getElementById('lastBuyingOption');
   if (optionSelect) optionSelect.value = 'date';
   if (dateInput) {
     dateInput.disabled = false;
@@ -491,14 +516,14 @@ function clearRequestForm() {
     dateInput.style.backgroundColor = '#fff';
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const orderDateInput = document.querySelector('[name="OrderDate"]');
+  var today = new Date().toISOString().split('T')[0];
+  var orderDateInput = document.querySelector('[name="OrderDate"]');
   if (orderDateInput) orderDateInput.value = today;
 }
 
 function handleLastBuyingDateFallback(value) {
-  const optionSelect = document.getElementById('lastBuyingOption');
-  const dateInput = document.getElementById('lastBuyingDate');
+  var optionSelect = document.getElementById('lastBuyingOption');
+  var dateInput = document.getElementById('lastBuyingDate');
 
   if (!optionSelect || !dateInput) return;
 
@@ -518,16 +543,16 @@ function handleLastBuyingDateFallback(value) {
 function parseDateForInput(dateValue) {
   if (!dateValue) return '';
   if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) return dateValue;
-  const d = new Date(dateValue);
+  var d = new Date(dateValue);
   if (!isNaN(d.getTime())) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   return '';
 }
 
 function handleLastBuyingOption() {
-  const option = document.getElementById('lastBuyingOption').value;
-  const dateInput = document.getElementById('lastBuyingDate');
+  var option = document.getElementById('lastBuyingOption').value;
+  var dateInput = document.getElementById('lastBuyingDate');
   if (option === 'never') {
     dateInput.value = '';
     dateInput.disabled = true;
@@ -540,8 +565,8 @@ function handleLastBuyingOption() {
 
 async function submitRequestForm(e) {
   e.preventDefault();
-  const form = document.getElementById('prForm');
-  const fd = new FormData(form);
+  var form = document.getElementById('prForm');
+  var fd = new FormData(form);
 
   if (editMode && currentEditId) {
     fd.append('ID', currentEditId);
@@ -550,13 +575,13 @@ async function submitRequestForm(e) {
     fd.append('action', 'create');
   }
 
-  const username = sessionStorage.getItem('username') || 'User';
+  var username = sessionStorage.getItem('username') || 'User';
   fd.append('Requester', username);
   fd.append('UpdatedBy', username);
 
-  const option = document.getElementById('lastBuyingOption').value;
-  const dateInput = document.getElementById('lastBuyingDate');
-  const hiddenInput = document.getElementById('lastBuyingDateHidden');
+  var option = document.getElementById('lastBuyingOption').value;
+  var dateInput = document.getElementById('lastBuyingDate');
+  var hiddenInput = document.getElementById('lastBuyingDateHidden');
   if (option === 'never') {
     hiddenInput.value = 'Never Buy';
   } else if (dateInput.value) {
@@ -566,18 +591,18 @@ async function submitRequestForm(e) {
   showToast(editMode ? 'Memperbarui data...' : 'Menyimpan data baru...', 'warning');
 
   try {
-    const response = await fetch(API_URL, { method: 'POST', body: fd });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.text();
+    var response = await fetch(API_URL, { method: 'POST', body: fd });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    var result = await response.text();
     console.log('✅ Form submitted:', result);
 
     showToast('Data berhasil disimpan', 'success');
     closeRequestModal();
 
     if (window.dataCache) {
-      Object.keys(window.dataCache).forEach(key => delete window.dataCache[key]);
+      Object.keys(window.dataCache).forEach(function (key) { delete window.dataCache[key]; });
     }
-    setTimeout(() => loadRequestData(true), 500);
+    setTimeout(function () { loadRequestData(true); }, 500);
   } catch (error) {
     console.error('❌ Submission error:', error);
     showToast('Gagal: ' + error.message, 'error');
@@ -585,7 +610,7 @@ async function submitRequestForm(e) {
 }
 
 function openRequestEdit(id) {
-  const row = allData['request'].find(r => r.ID === id);
+  var row = allData['request'].find(function (r) { return r.ID === id; });
   if (!row) {
     showToast('Data tidak ditemukan', 'error');
     return;
@@ -598,7 +623,7 @@ function openRequestEdit(id) {
 // ============================================
 
 function renderApprovalPage() {
-  const container = document.getElementById('page-approval');
+  var container = document.getElementById('page-approval');
   if (!container) return;
 
   container.innerHTML = `
@@ -648,23 +673,25 @@ function renderApprovalPage() {
     </div>
   `;
 
-  document.getElementById('pageSize-approval')?.addEventListener('change', (e) => {
+  document.getElementById('pageSize-approval').addEventListener('change', function (e) {
     pageSize = Number(e.target.value);
     currentPage['approval'] = 1;
     loadApprovalData();
   });
-  document.getElementById('search-approval')?.addEventListener('input', debounceSearch(onApprovalSearch, 300));
+  document.getElementById('search-approval').addEventListener('input', debounceSearch(onApprovalSearch, 300));
 
   loadApprovalData();
 }
 
 function loadApprovalData() {
-  loadDataOptimized((data) => {
-    allData['approval'] = (data || []).filter(d => d.Status === 'pending');
-    filteredData['approval'] = [...allData['approval']];
+  loadDataOptimized(function (data) {
+    allData['approval'] = (data || []).filter(function (d) { return d.Status === 'pending'; });
+    filteredData['approval'] = allData['approval'].slice();
 
     if (allData['approval'].length > 0) {
-      headers['approval'] = Object.keys(allData['approval'][0] || {}).filter(h => !HIDDEN_COLUMNS.approval.includes(h));
+      headers['approval'] = Object.keys(allData['approval'][0] || {}).filter(function (h) {
+        return HIDDEN_COLUMNS.approval.indexOf(h) === -1;
+      });
     } else {
       headers['approval'] = [];
     }
@@ -676,88 +703,91 @@ function loadApprovalData() {
 }
 
 function onApprovalSearch(e) {
-  const q = e.target.value.toLowerCase();
+  var q = e.target.value.toLowerCase();
   currentPage['approval'] = 1;
-  filteredData['approval'] = allData['approval'].filter(r =>
-    headers['approval'].map(h => r[h]).join(' ').toLowerCase().includes(q)
-  );
+  filteredData['approval'] = allData['approval'].filter(function (r) {
+    var text = headers['approval'].map(function (h) { return r[h]; }).join(' ').toLowerCase();
+    return text.indexOf(q) !== -1;
+  });
   renderApprovalTable();
   renderApprovalPagination();
 }
 
 function renderApprovalTable() {
-  const thead = document.getElementById('approval-thead');
-  const tbody = document.getElementById('approval-tbody');
+  var thead = document.getElementById('approval-thead');
+  var tbody = document.getElementById('approval-tbody');
   if (!thead || !tbody) return;
 
-  const headerHtml = headers['approval'].map(h => {
-    let html = `<th>${h}</th>`;
+  var headerHtml = headers['approval'].map(function (h) {
+    var html = '<th>' + h + '</th>';
     if (h === 'ID') html += '<th>Aksi</th>';
     return html;
   }).join('');
-  thead.innerHTML = `<tr>${headerHtml}</tr>`;
+  thead.innerHTML = '<tr>' + headerHtml + '</tr>';
 
-  const start = (currentPage['approval'] - 1) * pageSize;
-  const pageData = filteredData['approval'].slice(start, start + pageSize);
+  var start = (currentPage['approval'] - 1) * pageSize;
+  var pageData = filteredData['approval'].slice(start, start + pageSize);
 
   if (!pageData.length) {
-    tbody.innerHTML = `<tr><td colspan="${headers['approval'].length + 1}" class="text-center">Tidak ada data pending</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="' + (headers['approval'].length + 1) + '" class="text-center">Tidak ada data pending</td></tr>';
     return;
   }
 
-  const rowsHtml = pageData.map(r => {
-    let cellsHtml = headers['approval'].map(h => {
-      let v = r[h] ?? '';
-      let cls = '';
+  var rowsHtml = pageData.map(function (r) {
+    var cellsHtml = headers['approval'].map(function (h) {
+      var v = r[h] || '';
+      var cls = '';
 
-      if (DATETIME_COLUMNS.includes(h)) { v = formatDateTime(v); cls = 'text-center'; }
-      else if (DATE_COLUMNS.includes(h)) { v = formatDate(v); cls = 'text-center'; }
-      if (NUMBER_COLUMNS.includes(h)) { v = formatNumber(v); cls = 'text-right'; }
-      if (CURRENCY_COLUMNS.includes(h)) { v = formatRupiah(v); cls = 'text-right'; }
+      if (DATETIME_COLUMNS.indexOf(h) !== -1) { v = formatDateTime(v); cls = 'text-center'; }
+      else if (DATE_COLUMNS.indexOf(h) !== -1) { v = formatDate(v); cls = 'text-center'; }
+      if (NUMBER_COLUMNS.indexOf(h) !== -1) { v = formatNumber(v); cls = 'text-right'; }
+      if (CURRENCY_COLUMNS.indexOf(h) !== -1) { v = formatRupiah(v); cls = 'text-right'; }
 
-      let cell = `<td class="${cls}">${v}</td>`;
-      if (h === 'Status') cell = `<td class="text-center"><span class="status pending">pending</span></td>`;
+      var cell = '<td class="' + cls + '">' + v + '</td>';
+      if (h === 'Status') cell = '<td class="text-center"><span class="status pending">pending</span></td>';
       if (h === 'ID') {
-        cell += `<td class="text-center" style="white-space:nowrap;">
-          <button class="btn-primary" onclick="approveRequest('${r.ID}')" title="Approve">✅</button>
-          <button class="btn-secondary" onclick="rejectRequest('${r.ID}')" title="Reject">❌</button>
-        </td>`;
+        cell += '<td class="text-center" style="white-space:nowrap;">' +
+          '<button class="btn-primary" onclick="approveRequest(\'' + r.ID + '\')" title="Approve">✅</button>' +
+          '<button class="btn-secondary" onclick="rejectRequest(\'' + r.ID + '\')" title="Reject">❌</button>' +
+          '</td>';
       }
       return cell;
     }).join('');
-    return `<tr>${cellsHtml}</tr>`;
+    return '<tr>' + cellsHtml + '</tr>';
   });
 
   lazyRenderRows(rowsHtml, tbody, 50);
 }
 
 function renderApprovalPagination() {
-  const container = document.getElementById('pagination-approval');
-  const info = document.getElementById('infoText-approval');
+  var container = document.getElementById('pagination-approval');
+  var info = document.getElementById('infoText-approval');
   if (!container || !info) return;
 
-  const total = filteredData['approval'].length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const start = total === 0 ? 0 : (currentPage['approval'] - 1) * pageSize + 1;
-  const end = Math.min(start + pageSize - 1, total);
-  info.textContent = `Menampilkan ${start}–${end} dari ${total} data`;
+  var total = filteredData['approval'].length;
+  var totalPages = Math.max(1, Math.ceil(total / pageSize));
+  var start = total === 0 ? 0 : (currentPage['approval'] - 1) * pageSize + 1;
+  var end = Math.min(start + pageSize - 1, total);
+  info.textContent = 'Menampilkan ' + start + '–' + end + ' dari ' + total + ' data';
 
   container.innerHTML = '';
-  for (let i = 1; i <= totalPages; i++) {
-    const b = document.createElement('button');
+  for (var i = 1; i <= totalPages; i++) {
+    var b = document.createElement('button');
     b.textContent = i;
     b.className = 'pagination-btn';
     if (i === currentPage['approval']) b.classList.add('active');
-    b.onclick = () => { currentPage['approval'] = i; renderApprovalTable(); renderApprovalPagination(); };
+    b.onclick = (function (page) {
+      return function () { currentPage['approval'] = page; renderApprovalTable(); renderApprovalPagination(); };
+    })(i);
     container.appendChild(b);
   }
 }
 
 async function approveRequest(id) {
-  const name = sessionStorage.getItem('username') || prompt('Masukkan nama approver:');
+  var name = sessionStorage.getItem('username') || prompt('Masukkan nama approver:');
   if (!name) return;
 
-  const fd = new FormData();
+  var fd = new FormData();
   fd.append('ID', id);
   fd.append('Status', 'approved');
   fd.append('ApprovedBy', name);
@@ -765,11 +795,11 @@ async function approveRequest(id) {
 }
 
 async function rejectRequest(id) {
-  const name = sessionStorage.getItem('username') || prompt('Masukkan nama penolak:');
-  const reason = prompt('Masukkan alasan reject:');
+  var name = sessionStorage.getItem('username') || prompt('Masukkan nama penolak:');
+  var reason = prompt('Masukkan alasan reject:');
   if (!name || !reason) return;
 
-  const fd = new FormData();
+  var fd = new FormData();
   fd.append('ID', id);
   fd.append('Status', 'rejected');
   fd.append('RejectedBy', name);
@@ -780,7 +810,7 @@ async function rejectRequest(id) {
 async function submitApprovalAction(fd) {
   try {
     showToast('Memproses...', 'warning');
-    const res = await fetch(API_URL, { method: 'POST', body: fd });
+    var res = await fetch(API_URL, { method: 'POST', body: fd });
     if (!res.ok) throw new Error('Gagal update');
     showToast('Status berhasil diperbarui', 'success');
     if (window.dataCache) delete window.dataCache['main'];
@@ -801,7 +831,7 @@ function refreshApprovalData() {
 // ============================================
 
 function renderDonePage() {
-  const container = document.getElementById('page-done');
+  var container = document.getElementById('page-done');
   if (!container) return;
 
   container.innerHTML = `
@@ -851,23 +881,25 @@ function renderDonePage() {
     </div>
   `;
 
-  document.getElementById('pageSize-done')?.addEventListener('change', (e) => {
+  document.getElementById('pageSize-done').addEventListener('change', function (e) {
     pageSize = Number(e.target.value);
     currentPage['done'] = 1;
     loadDoneData();
   });
-  document.getElementById('search-done')?.addEventListener('input', debounceSearch(onDoneSearch, 300));
+  document.getElementById('search-done').addEventListener('input', debounceSearch(onDoneSearch, 300));
 
   loadDoneData();
 }
 
 function loadDoneData() {
-  loadDataOptimized((data) => {
-    allData['done'] = (data || []).filter(d => d.Status === 'approved');
-    filteredData['done'] = [...allData['done']];
+  loadDataOptimized(function (data) {
+    allData['done'] = (data || []).filter(function (d) { return d.Status === 'approved'; });
+    filteredData['done'] = allData['done'].slice();
 
     if (allData['done'].length > 0) {
-      headers['done'] = Object.keys(allData['done'][0] || {}).filter(h => !HIDDEN_COLUMNS.done.includes(h));
+      headers['done'] = Object.keys(allData['done'][0] || {}).filter(function (h) {
+        return HIDDEN_COLUMNS.done.indexOf(h) === -1;
+      });
     } else {
       headers['done'] = [];
     }
@@ -879,94 +911,97 @@ function loadDoneData() {
 }
 
 function onDoneSearch(e) {
-  const q = e.target.value.toLowerCase();
+  var q = e.target.value.toLowerCase();
   currentPage['done'] = 1;
-  filteredData['done'] = allData['done'].filter(r =>
-    headers['done'].map(h => r[h]).join(' ').toLowerCase().includes(q)
-  );
+  filteredData['done'] = allData['done'].filter(function (r) {
+    var text = headers['done'].map(function (h) { return r[h]; }).join(' ').toLowerCase();
+    return text.indexOf(q) !== -1;
+  });
   renderDoneTable();
   renderDonePagination();
 }
 
 function renderDoneTable() {
-  const thead = document.getElementById('done-thead');
-  const tbody = document.getElementById('done-tbody');
+  var thead = document.getElementById('done-thead');
+  var tbody = document.getElementById('done-tbody');
   if (!thead || !tbody) return;
 
-  const headerHtml = headers['done'].map(h => {
-    let html = `<th>${h}</th>`;
+  var headerHtml = headers['done'].map(function (h) {
+    var html = '<th>' + h + '</th>';
     if (h === 'ID') html += '<th>Aksi</th>';
     return html;
   }).join('');
-  thead.innerHTML = `<tr>${headerHtml}</tr>`;
+  thead.innerHTML = '<tr>' + headerHtml + '</tr>';
 
-  const start = (currentPage['done'] - 1) * pageSize;
-  const pageData = filteredData['done'].slice(start, start + pageSize);
+  var start = (currentPage['done'] - 1) * pageSize;
+  var pageData = filteredData['done'].slice(start, start + pageSize);
 
   if (!pageData.length) {
-    tbody.innerHTML = `<tr><td colspan="${headers['done'].length + 1}" class="text-center">Tidak ada data APPROVED</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="' + (headers['done'].length + 1) + '" class="text-center">Tidak ada data APPROVED</td></tr>';
     return;
   }
 
-  const rowsHtml = pageData.map(r => {
-    let cellsHtml = headers['done'].map(h => {
-      let v = r[h] ?? '';
-      let cls = '';
+  var rowsHtml = pageData.map(function (r) {
+    var cellsHtml = headers['done'].map(function (h) {
+      var v = r[h] || '';
+      var cls = '';
 
-      if (DATETIME_COLUMNS.includes(h)) { v = formatDateTime(v); cls = 'text-center'; }
-      else if (DATE_COLUMNS.includes(h)) { v = formatDate(v); cls = 'text-center'; }
-      if (NUMBER_COLUMNS.includes(h)) { v = formatNumber(v); cls = 'text-right'; }
-      if (CURRENCY_COLUMNS.includes(h)) { v = formatRupiah(v); cls = 'text-right'; }
+      if (DATETIME_COLUMNS.indexOf(h) !== -1) { v = formatDateTime(v); cls = 'text-center'; }
+      else if (DATE_COLUMNS.indexOf(h) !== -1) { v = formatDate(v); cls = 'text-center'; }
+      if (NUMBER_COLUMNS.indexOf(h) !== -1) { v = formatNumber(v); cls = 'text-right'; }
+      if (CURRENCY_COLUMNS.indexOf(h) !== -1) { v = formatRupiah(v); cls = 'text-right'; }
 
-      let cell = `<td class="${cls}">${v}</td>`;
-      if (h === 'Status') cell = `<td class="text-center"><span class="status approved">approved</span></td>`;
+      var cell = '<td class="' + cls + '">' + v + '</td>';
+      if (h === 'Status') cell = '<td class="text-center"><span class="status approved">approved</span></td>';
       if (h === 'ID') {
-        cell += `<td class="text-center">
-          <button class="btn-primary" onclick="markDone('${r.ID}')" title="Mark Done">📦</button>
-        </td>`;
+        cell += '<td class="text-center">' +
+          '<button class="btn-primary" onclick="markDone(\'' + r.ID + '\')" title="Mark Done">📦</button>' +
+          '</td>';
       }
       return cell;
     }).join('');
-    return `<tr>${cellsHtml}</tr>`;
+    return '<tr>' + cellsHtml + '</tr>';
   });
 
   lazyRenderRows(rowsHtml, tbody, 50);
 }
 
 function renderDonePagination() {
-  const container = document.getElementById('pagination-done');
-  const info = document.getElementById('infoText-done');
+  var container = document.getElementById('pagination-done');
+  var info = document.getElementById('infoText-done');
   if (!container || !info) return;
 
-  const total = filteredData['done'].length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const start = total === 0 ? 0 : (currentPage['done'] - 1) * pageSize + 1;
-  const end = Math.min(start + pageSize - 1, total);
-  info.textContent = `Menampilkan ${start}–${end} dari ${total} data`;
+  var total = filteredData['done'].length;
+  var totalPages = Math.max(1, Math.ceil(total / pageSize));
+  var start = total === 0 ? 0 : (currentPage['done'] - 1) * pageSize + 1;
+  var end = Math.min(start + pageSize - 1, total);
+  info.textContent = 'Menampilkan ' + start + '–' + end + ' dari ' + total + ' data';
 
   container.innerHTML = '';
-  for (let i = 1; i <= totalPages; i++) {
-    const b = document.createElement('button');
+  for (var i = 1; i <= totalPages; i++) {
+    var b = document.createElement('button');
     b.textContent = i;
     b.className = 'pagination-btn';
     if (i === currentPage['done']) b.classList.add('active');
-    b.onclick = () => { currentPage['done'] = i; renderDoneTable(); renderDonePagination(); };
+    b.onclick = (function (page) {
+      return function () { currentPage['done'] = page; renderDoneTable(); renderDonePagination(); };
+    })(i);
     container.appendChild(b);
   }
 }
 
 function markDone(id) {
-  const choice = prompt('Ketik angka pilihan:\n1 = Completed (Semua dibeli)\n2 = Partial (Sebagian dibeli)');
+  var choice = prompt('Ketik angka pilihan:\n1 = Completed (Semua dibeli)\n2 = Partial (Sebagian dibeli)');
   if (choice === '1') completeAll(id);
   else if (choice === '2') partialComplete(id);
   else if (choice !== null) alert('Pilihan tidak valid');
 }
 
 async function completeAll(id) {
-  const user = sessionStorage.getItem('username') || prompt('Nama yang menyelesaikan:');
+  var user = sessionStorage.getItem('username') || prompt('Nama yang menyelesaikan:');
   if (!user) return;
 
-  const fd = new FormData();
+  var fd = new FormData();
   fd.append('ID', id);
   fd.append('Status', 'done');
   fd.append('DoneBy', user);
@@ -974,19 +1009,19 @@ async function completeAll(id) {
 }
 
 async function partialComplete(id) {
-  const data = allData['done'].find(d => d.ID === id);
+  var data = allData['done'].find(function (d) { return d.ID === id; });
   if (!data) return;
 
-  const boughtQty = Number(prompt(`Qty dibeli (Maks ${data.Qty}):`));
+  var boughtQty = Number(prompt('Qty dibeli (Maks ' + data.Qty + '):'));
   if (!boughtQty || boughtQty <= 0 || boughtQty >= data.Qty) {
     alert('Qty tidak valid (Harus > 0 dan < Total Qty)');
     return;
   }
 
-  const user = sessionStorage.getItem('username') || prompt('Nama yang menyelesaikan:');
+  var user = sessionStorage.getItem('username') || prompt('Nama yang menyelesaikan:');
   if (!user) return;
 
-  const fd = new FormData();
+  var fd = new FormData();
   fd.append('ID', id);
   fd.append('Status', 'partial');
   fd.append('BoughtQty', boughtQty);
@@ -998,7 +1033,7 @@ async function partialComplete(id) {
 async function submitDoneAction(fd, successMsg) {
   try {
     showToast('Memproses...', 'warning');
-    const res = await fetch(API_URL, { method: 'POST', body: fd });
+    var res = await fetch(API_URL, { method: 'POST', body: fd });
     if (!res.ok) throw new Error('Gagal update');
     showToast(successMsg, 'success');
     if (window.dataCache) delete window.dataCache['main'];
@@ -1019,7 +1054,7 @@ function refreshDoneData() {
 // ============================================
 
 function renderRekapPage() {
-  const container = document.getElementById('page-rekap');
+  var container = document.getElementById('page-rekap');
   if (!container) return;
 
   container.innerHTML = `
@@ -1069,27 +1104,30 @@ function renderRekapPage() {
     </div>
   `;
 
-  document.getElementById('pageSize-rekap')?.addEventListener('change', (e) => {
+  document.getElementById('pageSize-rekap').addEventListener('change', function (e) {
     pageSize = Number(e.target.value);
     currentPage['rekap'] = 1;
     loadRekapData();
   });
-  document.getElementById('search-rekap')?.addEventListener('input', debounceSearch(onRekapSearch, 300));
+  document.getElementById('search-rekap').addEventListener('input', debounceSearch(onRekapSearch, 300));
 
   loadRekapData();
 }
 
-function loadRekapData(forceRefresh = false) {
+function loadRekapData(forceRefresh) {
+  if (forceRefresh === undefined) forceRefresh = false;
   if (forceRefresh && window.dataCache) {
     delete window.dataCache['done'];
   }
 
-  loadDataOptimized((data) => {
+  loadDataOptimized(function (data) {
     allData['rekap'] = data || [];
-    filteredData['rekap'] = [...allData['rekap']];
+    filteredData['rekap'] = allData['rekap'].slice();
 
     if (allData['rekap'].length > 0) {
-      headers['rekap'] = Object.keys(allData['rekap'][0] || {}).filter(h => !HIDDEN_COLUMNS.rekap.includes(h));
+      headers['rekap'] = Object.keys(allData['rekap'][0] || {}).filter(function (h) {
+        return HIDDEN_COLUMNS.rekap.indexOf(h) === -1;
+      });
     } else {
       headers['rekap'] = [];
     }
@@ -1101,96 +1139,99 @@ function loadRekapData(forceRefresh = false) {
 }
 
 function onRekapSearch(e) {
-  const q = e.target.value.toLowerCase();
+  var q = e.target.value.toLowerCase();
   currentPage['rekap'] = 1;
-  filteredData['rekap'] = allData['rekap'].filter(r =>
-    headers['rekap'].map(h => r[h]).join(' ').toLowerCase().includes(q)
-  );
+  filteredData['rekap'] = allData['rekap'].filter(function (r) {
+    var text = headers['rekap'].map(function (h) { return r[h]; }).join(' ').toLowerCase();
+    return text.indexOf(q) !== -1;
+  });
   renderRekapTable();
   renderRekapPagination();
 }
 
 function renderRekapTable() {
-  const thead = document.getElementById('rekap-thead');
-  const tbody = document.getElementById('rekap-tbody');
+  var thead = document.getElementById('rekap-thead');
+  var tbody = document.getElementById('rekap-tbody');
   if (!thead || !tbody) return;
 
-  const headerHtml = headers['rekap'].map(h => {
-    let displayName = h;
+  var headerHtml = headers['rekap'].map(function (h) {
+    var displayName = h;
     if (h === 'SubmissionDate') displayName = 'Submission Date';
-    return `<th>${displayName}</th>`;
+    return '<th>' + displayName + '</th>';
   }).join('');
-  thead.innerHTML = `<tr>${headerHtml}</tr>`;
+  thead.innerHTML = '<tr>' + headerHtml + '</tr>';
 
-  const start = (currentPage['rekap'] - 1) * pageSize;
-  const pageData = filteredData['rekap'].slice(start, start + pageSize);
+  var start = (currentPage['rekap'] - 1) * pageSize;
+  var pageData = filteredData['rekap'].slice(start, start + pageSize);
 
   if (!pageData.length) {
-    tbody.innerHTML = `<tr><td colspan="${headers['rekap'].length}" class="text-center">Data tidak ditemukan</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="' + headers['rekap'].length + '" class="text-center">Data tidak ditemukan</td></tr>';
     return;
   }
 
-  const rowsHtml = pageData.map(r => {
-    let cellsHtml = headers['rekap'].map(h => {
-      let v = r[h] ?? '';
-      let cls = '';
+  var rowsHtml = pageData.map(function (r) {
+    var cellsHtml = headers['rekap'].map(function (h) {
+      var v = r[h] || '';
+      var cls = '';
 
       if (h === 'SubmissionDate') {
         v = formatDateTime(v);
         cls = 'text-center';
-      } else if (DATETIME_COLUMNS.includes(h)) {
+      } else if (DATETIME_COLUMNS.indexOf(h) !== -1) {
         v = formatDateTime(v);
         cls = 'text-center';
-      } else if (DATE_COLUMNS.includes(h)) {
+      } else if (DATE_COLUMNS.indexOf(h) !== -1) {
         v = formatDate(v);
         cls = 'text-center';
       }
-      if (NUMBER_COLUMNS.includes(h)) { v = formatNumber(v); cls = 'text-right'; }
-      if (CURRENCY_COLUMNS.includes(h)) { v = formatRupiah(v); cls = 'text-right'; }
+      if (NUMBER_COLUMNS.indexOf(h) !== -1) { v = formatNumber(v); cls = 'text-right'; }
+      if (CURRENCY_COLUMNS.indexOf(h) !== -1) { v = formatRupiah(v); cls = 'text-right'; }
 
-      let cell = `<td class="${cls}">${v}</td>`;
+      var cell = '<td class="' + cls + '">' + v + '</td>';
       if (h === 'Status') {
-        const status = String(v).toLowerCase();
-        cell = `<td class="text-center"><span class="status ${status}">${v}</span></td>`;
+        var status = String(v).toLowerCase();
+        cell = '<td class="text-center"><span class="status ' + status + '">' + v + '</span></td>';
       }
       return cell;
     }).join('');
-    return `<tr>${cellsHtml}</tr>`;
+    return '<tr>' + cellsHtml + '</tr>';
   });
 
   lazyRenderRows(rowsHtml, tbody, 50);
 }
 
 function renderRekapPagination() {
-  const container = document.getElementById('pagination-rekap');
-  const info = document.getElementById('infoText-rekap');
+  var container = document.getElementById('pagination-rekap');
+  var info = document.getElementById('infoText-rekap');
   if (!container || !info) return;
 
-  const total = filteredData['rekap'].length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const start = total === 0 ? 0 : (currentPage['rekap'] - 1) * pageSize + 1;
-  const end = Math.min(start + pageSize - 1, total);
-  info.textContent = `Menampilkan ${start}–${end} dari ${total} data`;
+  var total = filteredData['rekap'].length;
+  var totalPages = Math.max(1, Math.ceil(total / pageSize));
+  var start = total === 0 ? 0 : (currentPage['rekap'] - 1) * pageSize + 1;
+  var end = Math.min(start + pageSize - 1, total);
+  info.textContent = 'Menampilkan ' + start + '–' + end + ' dari ' + total + ' data';
 
   container.innerHTML = '';
   if (currentPage['rekap'] > 1) {
-    const prevBtn = document.createElement('button');
+    var prevBtn = document.createElement('button');
     prevBtn.textContent = '←';
     prevBtn.className = 'pagination-btn';
-    prevBtn.onclick = () => { currentPage['rekap']--; renderRekapTable(); renderRekapPagination(); };
+    prevBtn.onclick = function () { currentPage['rekap']--; renderRekapTable(); renderRekapPagination(); };
     container.appendChild(prevBtn);
   }
 
-  for (let i = 1; i <= totalPages; i++) {
+  for (var i = 1; i <= totalPages; i++) {
     if (i === 1 || i === totalPages || (i >= currentPage['rekap'] - 2 && i <= currentPage['rekap'] + 2)) {
-      const b = document.createElement('button');
+      var b = document.createElement('button');
       b.textContent = i;
       b.className = 'pagination-btn';
       if (i === currentPage['rekap']) b.classList.add('active');
-      b.onclick = () => { currentPage['rekap'] = i; renderRekapTable(); renderRekapPagination(); };
+      b.onclick = (function (page) {
+        return function () { currentPage['rekap'] = page; renderRekapTable(); renderRekapPagination(); };
+      })(i);
       container.appendChild(b);
     } else if (i === currentPage['rekap'] - 3 || i === currentPage['rekap'] + 3) {
-      const ellipsis = document.createElement('span');
+      var ellipsis = document.createElement('span');
       ellipsis.textContent = '...';
       ellipsis.style.margin = '0 4px';
       ellipsis.style.color = '#6b7280';
@@ -1199,10 +1240,10 @@ function renderRekapPagination() {
   }
 
   if (currentPage['rekap'] < totalPages) {
-    const nextBtn = document.createElement('button');
+    var nextBtn = document.createElement('button');
     nextBtn.textContent = '→';
     nextBtn.className = 'pagination-btn';
-    nextBtn.onclick = () => { currentPage['rekap']++; renderRekapTable(); renderRekapPagination(); };
+    nextBtn.onclick = function () { currentPage['rekap']++; renderRekapTable(); renderRekapPagination(); };
     container.appendChild(nextBtn);
   }
 }
@@ -1218,7 +1259,7 @@ function refreshRekapData() {
 // ============================================
 
 function renderRejectedPage() {
-  const container = document.getElementById('page-rejected');
+  var container = document.getElementById('page-rejected');
   if (!container) return;
 
   container.innerHTML = `
@@ -1268,23 +1309,25 @@ function renderRejectedPage() {
     </div>
   `;
 
-  document.getElementById('pageSize-rejected')?.addEventListener('change', (e) => {
+  document.getElementById('pageSize-rejected').addEventListener('change', function (e) {
     pageSize = Number(e.target.value);
     currentPage['rejected'] = 1;
     loadRejectedData();
   });
-  document.getElementById('search-rejected')?.addEventListener('input', debounceSearch(onRejectedSearch, 300));
+  document.getElementById('search-rejected').addEventListener('input', debounceSearch(onRejectedSearch, 300));
 
   loadRejectedData();
 }
 
 function loadRejectedData() {
-  loadDataOptimized((data) => {
+  loadDataOptimized(function (data) {
     allData['rejected'] = data || [];
-    filteredData['rejected'] = [...allData['rejected']];
+    filteredData['rejected'] = allData['rejected'].slice();
 
     if (allData['rejected'].length > 0) {
-      headers['rejected'] = Object.keys(allData['rejected'][0] || {}).filter(h => !HIDDEN_COLUMNS.rejected.includes(h));
+      headers['rejected'] = Object.keys(allData['rejected'][0] || {}).filter(function (h) {
+        return HIDDEN_COLUMNS.rejected.indexOf(h) === -1;
+      });
     } else {
       headers['rejected'] = [];
     }
@@ -1296,70 +1339,73 @@ function loadRejectedData() {
 }
 
 function onRejectedSearch(e) {
-  const q = e.target.value.toLowerCase();
+  var q = e.target.value.toLowerCase();
   currentPage['rejected'] = 1;
-  filteredData['rejected'] = allData['rejected'].filter(r =>
-    headers['rejected'].map(h => r[h]).join(' ').toLowerCase().includes(q)
-  );
+  filteredData['rejected'] = allData['rejected'].filter(function (r) {
+    var text = headers['rejected'].map(function (h) { return r[h]; }).join(' ').toLowerCase();
+    return text.indexOf(q) !== -1;
+  });
   renderRejectedTable();
   renderRejectedPagination();
 }
 
 function renderRejectedTable() {
-  const thead = document.getElementById('rejected-thead');
-  const tbody = document.getElementById('rejected-tbody');
+  var thead = document.getElementById('rejected-thead');
+  var tbody = document.getElementById('rejected-tbody');
   if (!thead || !tbody) return;
 
-  const headerHtml = headers['rejected'].map(h => `<th>${h}</th>`).join('');
-  thead.innerHTML = `<tr>${headerHtml}</tr>`;
+  var headerHtml = headers['rejected'].map(function (h) { return '<th>' + h + '</th>'; }).join('');
+  thead.innerHTML = '<tr>' + headerHtml + '</tr>';
 
-  const start = (currentPage['rejected'] - 1) * pageSize;
-  const pageData = filteredData['rejected'].slice(start, start + pageSize);
+  var start = (currentPage['rejected'] - 1) * pageSize;
+  var pageData = filteredData['rejected'].slice(start, start + pageSize);
 
   if (!pageData.length) {
-    tbody.innerHTML = `<tr><td colspan="${headers['rejected'].length}" class="text-center">Data tidak ditemukan</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="' + headers['rejected'].length + '" class="text-center">Data tidak ditemukan</td></tr>';
     return;
   }
 
-  const rowsHtml = pageData.map(r => {
-    let cellsHtml = headers['rejected'].map(h => {
-      let v = r[h] ?? '';
-      let cls = '';
+  var rowsHtml = pageData.map(function (r) {
+    var cellsHtml = headers['rejected'].map(function (h) {
+      var v = r[h] || '';
+      var cls = '';
 
-      if (DATETIME_COLUMNS.includes(h)) { v = formatDateTime(v); cls = 'text-center'; }
-      else if (DATE_COLUMNS.includes(h)) { v = formatDate(v); cls = 'text-center'; }
-      if (NUMBER_COLUMNS.includes(h)) { v = formatNumber(v); cls = 'text-right'; }
-      if (CURRENCY_COLUMNS.includes(h)) { v = formatRupiah(v); cls = 'text-right'; }
+      if (DATETIME_COLUMNS.indexOf(h) !== -1) { v = formatDateTime(v); cls = 'text-center'; }
+      else if (DATE_COLUMNS.indexOf(h) !== -1) { v = formatDate(v); cls = 'text-center'; }
+      if (NUMBER_COLUMNS.indexOf(h) !== -1) { v = formatNumber(v); cls = 'text-right'; }
+      if (CURRENCY_COLUMNS.indexOf(h) !== -1) { v = formatRupiah(v); cls = 'text-right'; }
       if (h === 'Items' || h === 'Description' || h === 'RejectedReason') cls += ' truncate';
 
-      let cell = `<td class="${cls}" title="${v}">${v}</td>`;
-      if (h === 'Status') cell = `<td class="text-center"><span class="status rejected">rejected</span></td>`;
+      var cell = '<td class="' + cls + '" title="' + v + '">' + v + '</td>';
+      if (h === 'Status') cell = '<td class="text-center"><span class="status rejected">rejected</span></td>';
       return cell;
     }).join('');
-    return `<tr>${cellsHtml}</tr>`;
+    return '<tr>' + cellsHtml + '</tr>';
   });
 
   lazyRenderRows(rowsHtml, tbody, 50);
 }
 
 function renderRejectedPagination() {
-  const container = document.getElementById('pagination-rejected');
-  const info = document.getElementById('infoText-rejected');
+  var container = document.getElementById('pagination-rejected');
+  var info = document.getElementById('infoText-rejected');
   if (!container || !info) return;
 
-  const total = filteredData['rejected'].length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const start = total === 0 ? 0 : (currentPage['rejected'] - 1) * pageSize + 1;
-  const end = Math.min(start + pageSize - 1, total);
-  info.textContent = `Menampilkan ${start}–${end} dari ${total} data`;
+  var total = filteredData['rejected'].length;
+  var totalPages = Math.max(1, Math.ceil(total / pageSize));
+  var start = total === 0 ? 0 : (currentPage['rejected'] - 1) * pageSize + 1;
+  var end = Math.min(start + pageSize - 1, total);
+  info.textContent = 'Menampilkan ' + start + '–' + end + ' dari ' + total + ' data';
 
   container.innerHTML = '';
-  for (let i = 1; i <= totalPages; i++) {
-    const b = document.createElement('button');
+  for (var i = 1; i <= totalPages; i++) {
+    var b = document.createElement('button');
     b.textContent = i;
     b.className = 'pagination-btn';
     if (i === currentPage['rejected']) b.classList.add('active');
-    b.onclick = () => { currentPage['rejected'] = i; renderRejectedTable(); renderRejectedPagination(); };
+    b.onclick = (function (page) {
+      return function () { currentPage['rejected'] = page; renderRejectedTable(); renderRejectedPagination(); };
+    })(i);
     container.appendChild(b);
   }
 }
@@ -1375,7 +1421,7 @@ function refreshRejectedData() {
 // ============================================
 
 function renderPrintPage() {
-  const container = document.getElementById('page-print');
+  var container = document.getElementById('page-print');
   if (!container) return;
 
   container.innerHTML = `
@@ -1430,127 +1476,131 @@ function renderPrintPage() {
 }
 
 async function exportByPage(pageKey) {
-  const sheetMap = { request: '', approval: '', rekap: 'done', rejected: 'rejected' };
-  const filterMap = { request: 'pending', approval: 'approved', rekap: null, rejected: null };
-  const titleMap = {
+  var sheetMap = { request: '', approval: '', rekap: 'done', rejected: 'rejected' };
+  var filterMap = { request: 'pending', approval: 'approved', rekap: null, rejected: null };
+  var titleMap = {
     request: 'Purchase Request - New Request',
     approval: 'Purchase Request - Approval Hub',
     rekap: 'Purchase Request - Report Center',
     rejected: 'Purchase Request - Rejection Log'
   };
 
-  const btn = document.querySelector(`.btn-${pageKey}`);
+  var btn = document.querySelector('.btn-' + pageKey);
   if (btn) {
     btn.disabled = true;
     btn.textContent = '⏳ Memproses...';
   }
 
   try {
-    showToast(`⏳ Mengekspor ${pageKey}...`, 'warning');
+    showToast('⏳ Mengekspor ' + pageKey + '...', 'warning');
 
-    const data = await fetchExportData(sheetMap[pageKey]);
-    const htmlContent = createExportTable(data, filterMap[pageKey], titleMap[pageKey]);
+    var data = await fetchExportData(sheetMap[pageKey]);
+    var htmlContent = createExportTable(data, filterMap[pageKey], titleMap[pageKey]);
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
-    generatePDF(htmlContent, `Purchase-Request-${pageKey}-${timestamp}.pdf`);
+    var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+    generatePDF(htmlContent, 'Purchase-Request-' + pageKey + '-' + timestamp + '.pdf');
 
-    showToast(`✅ Export ${pageKey} berhasil!`, 'success');
+    showToast('✅ Export ' + pageKey + ' berhasil!', 'success');
   } catch (err) {
     console.error(err);
-    showToast(`❌ ${err.message}`, 'error');
+    showToast('❌ ' + err.message, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = `📄 Export ${pageKey.charAt(0).toUpperCase() + pageKey.slice(1)}`;
+      btn.textContent = '📄 Export ' + pageKey.charAt(0).toUpperCase() + pageKey.slice(1);
     }
   }
 }
 
-function fetchExportData(sheetName = '') {
-  return new Promise((resolve, reject) => {
-    const callbackName = `cb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+function fetchExportData(sheetName) {
+  if (sheetName === undefined) sheetName = '';
+  return new Promise(function (resolve, reject) {
+    var callbackName = 'cb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
     window[callbackName] = function (data) {
       delete window[callbackName];
-      document.getElementById(`script-${callbackName}`)?.remove();
+      var scriptEl = document.getElementById('script-' + callbackName);
+      if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
       resolve(data);
     };
 
-    const url = new URL(API_URL);
+    var url = new URL(API_URL);
     url.searchParams.set('callback', callbackName);
     if (sheetName) url.searchParams.set('sheet', sheetName);
 
-    const script = document.createElement('script');
-    script.id = `script-${callbackName}`;
+    var script = document.createElement('script');
+    script.id = 'script-' + callbackName;
     script.src = url.toString();
-    script.onerror = () => reject(new Error('Gagal mengambil data'));
+    script.onerror = function () { reject(new Error('Gagal mengambil data')); };
 
-    const timeout = setTimeout(() => {
+    var timeout = setTimeout(function () {
       reject(new Error('Timeout - data tidak diterima'));
     }, 15000);
 
-    script.onload = () => clearTimeout(timeout);
+    script.onload = function () { clearTimeout(timeout); };
     document.body.appendChild(script);
   });
 }
 
-function createExportTable(data, filter = null, title = '') {
+function createExportTable(data, filter, title) {
+  if (filter === undefined) filter = null;
+  if (title === undefined) title = '';
   if (!Array.isArray(data) || data.length === 0) return '<p>Tidak ada data</p>';
 
-  let filteredData = data;
+  var filteredData = data;
   if (filter) {
-    filteredData = data.filter(row => (row.Status || '').toLowerCase() === filter);
+    filteredData = data.filter(function (row) {
+      return (row.Status || '').toLowerCase() === filter;
+    });
   }
 
   if (filteredData.length === 0) return '<p>Tidak ada data</p>';
 
-  const ALLOWED_COLUMNS = ['ID', 'Department', 'Office', 'Items', 'PartOf', 'Description', 'Qty', 'Unit', 'Price', 'Nominal', 'LastBuyingDate', 'OrderDate', 'Priority', 'OrderBy', 'Status'];
-  const allHeaders = Object.keys(filteredData[0] || {});
-  const headers = allHeaders.filter(h => ALLOWED_COLUMNS.includes(h));
+  var ALLOWED_COLUMNS = ['ID', 'Department', 'Office', 'Items', 'PartOf', 'Description', 'Qty', 'Unit', 'Price', 'Nominal', 'LastBuyingDate', 'OrderDate', 'Priority', 'OrderBy', 'Status'];
+  var allHeaders = Object.keys(filteredData[0] || {});
+  var headers = allHeaders.filter(function (h) { return ALLOWED_COLUMNS.indexOf(h) !== -1; });
 
-  const headerRow = headers.map(h => `<th style="padding:6px;text-align:left;border:1px solid #ddd;background:#f0f0f0;font-weight:bold;font-size:9px;word-wrap:break-word;">${h}</th>`).join('');
+  var headerRow = headers.map(function (h) {
+    return '<th style="padding:6px;text-align:left;border:1px solid #ddd;background:#f0f0f0;font-weight:bold;font-size:9px;word-wrap:break-word;">' + h + '</th>';
+  }).join('');
 
-  const bodyRows = filteredData.map(row => {
-    const cells = headers.map(h => {
-      let value = row[h] ?? '';
+  var bodyRows = filteredData.map(function (row) {
+    var cells = headers.map(function (h) {
+      var value = row[h] || '';
 
-      if (['CreatedAt', 'SubmissionDate', 'ApprovedDate', 'DoneDate', 'RejectedDate'].includes(h) && value) {
+      if (['CreatedAt', 'SubmissionDate', 'ApprovedDate', 'DoneDate', 'RejectedDate'].indexOf(h) !== -1 && value) {
         value = formatDateTime(value);
-      } else if (['LastBuyingDate', 'OrderDate'].includes(h) && value) {
+      } else if (['LastBuyingDate', 'OrderDate'].indexOf(h) !== -1 && value) {
         value = formatDate(value);
-      } else if (['Price', 'Nominal'].includes(h) && value) {
+      } else if (['Price', 'Nominal'].indexOf(h) !== -1 && value) {
         value = formatRupiah(value);
       }
 
-      return `<td style="padding:4px;border:1px solid #ddd;font-size:8px;word-wrap:break-word;max-width:80px;">${String(value).substring(0, 50)}</td>`;
+      return '<td style="padding:4px;border:1px solid #ddd;font-size:8px;word-wrap:break-word;max-width:80px;">' + String(value).substring(0, 50) + '</td>';
     }).join('');
-    return `<tr>${cells}</tr>`;
+    return '<tr>' + cells + '</tr>';
   }).join('');
 
-  return `
-    <div style="page-break-after:always;margin-bottom:20px;">
-      <h2 style="color:#333;margin-bottom:10px;font-size:14px;">${title}</h2>
-      <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:8px;">
-        <thead><tr>${headerRow}</tr></thead>
-        <tbody>${bodyRows}</tbody>
-      </table>
-    </div>
-  `;
+  return '<div style="page-break-after:always;margin-bottom:20px;">' +
+    '<h2 style="color:#333;margin-bottom:10px;font-size:14px;">' + title + '</h2>' +
+    '<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:8px;">' +
+    '<thead><tr>' + headerRow + '</tr></thead>' +
+    '<tbody>' + bodyRows + '</tbody>' +
+    '</table>' +
+    '</div>';
 }
 
 function generatePDF(htmlContent, filename) {
-  const element = document.createElement('div');
-  element.innerHTML = `
-    <div style="font-family:Arial,sans-serif;padding:15px;font-size:8px;">
-      <div style="text-align:center;margin-bottom:15px;">
-        <h1 style="margin:0;color:#0c4a6e;font-size:16px;">📄 Purchase Request Report</h1>
-        <p style="color:#666;margin:5px 0;font-size:9px;">Generated: ${new Date().toLocaleString('id-ID')}</p>
-      </div>
-      ${htmlContent}
-    </div>
-  `;
+  var element = document.createElement('div');
+  element.innerHTML = '<div style="font-family:Arial,sans-serif;padding:15px;font-size:8px;">' +
+    '<div style="text-align:center;margin-bottom:15px;">' +
+    '<h1 style="margin:0;color:#0c4a6e;font-size:16px;">📄 Purchase Request Report</h1>' +
+    '<p style="color:#666;margin:5px 0;font-size:9px;">Generated: ' + new Date().toLocaleString('id-ID') + '</p>' +
+    '</div>' +
+    htmlContent +
+    '</div>';
 
-  const options = {
+  var options = {
     margin: [8, 8, 8, 8],
     filename: filename,
     image: { type: 'jpeg', quality: 0.95 },
@@ -1571,25 +1621,25 @@ function generatePDF(htmlContent, filename) {
 // ============================================
 
 function renderPageContainers() {
-  const app = document.getElementById('app');
+  var app = document.getElementById('app');
   if (!app) return;
 
-  const pages = ['dashboard', 'request', 'approval', 'done', 'rekap', 'rejected', 'print'];
+  var pages = ['dashboard', 'request', 'approval', 'done', 'rekap', 'rejected', 'print'];
 
-  app.innerHTML = pages.map(page => `
-    <div id="page-${page}" class="page-container" style="display:none;"></div>
-  `).join('');
+  app.innerHTML = pages.map(function (page) {
+    return '<div id="page-' + page + '" class="page-container" style="display:none;"></div>';
+  }).join('');
 }
 
 function setupModalEvents() {
-  const modal = document.getElementById('requestModal');
+  var modal = document.getElementById('requestModal');
   if (!modal) {
     createRequestModal();
   }
 }
 
 function createRequestModal() {
-  const modalHTML = `
+  var modalHTML = `
     <div id="requestModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -1640,12 +1690,12 @@ function createRequestModal() {
 
   document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-  document.getElementById('btnCloseModal')?.addEventListener('click', closeRequestModal);
-  document.getElementById('btnCancelModal')?.addEventListener('click', closeRequestModal);
-  document.getElementById('prForm')?.addEventListener('submit', submitRequestForm);
+  document.getElementById('btnCloseModal').addEventListener('click', closeRequestModal);
+  document.getElementById('btnCancelModal').addEventListener('click', closeRequestModal);
+  document.getElementById('prForm').addEventListener('submit', submitRequestForm);
 
-  document.getElementById('requestModal')?.addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeRequestModal();
+  document.getElementById('requestModal').addEventListener('click', function (e) {
+    if (e.target === this) closeRequestModal();
   });
 }
 
@@ -1659,20 +1709,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
   renderPageContainers();
 
-  const initialPage = sessionStorage.getItem('currentPage') || 'dashboard';
+  var initialPage = sessionStorage.getItem('currentPage') || 'dashboard';
   if (typeof checkPermission === 'function' && checkPermission(initialPage)) {
     renderPage(initialPage);
   } else {
-    const role = typeof normalizeRole === 'function' ? normalizeRole(sessionStorage.getItem('userRole')) : 'viewer';
-    const allowed = (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) || ['dashboard'];
+    var role = typeof normalizeRole === 'function' ? normalizeRole(sessionStorage.getItem('userRole')) : 'viewer';
+    var allowed = (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) || ['dashboard'];
     renderPage(allowed[0]);
   }
 
   setupModalEvents();
 
-  // Auto refresh every 60 seconds
-  setInterval(() => {
-    const current = sessionStorage.getItem('currentPage');
+  setInterval(function () {
+    var current = sessionStorage.getItem('currentPage');
     if (current === 'request') loadRequestData(true);
     else if (current === 'approval') loadApprovalData();
     else if (current === 'done') loadDoneData();

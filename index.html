@@ -31,17 +31,25 @@
     <!-- Semua page container akan di-render oleh JavaScript -->
   </div>
 
-  <!-- SCRIPTS - Urutan loading PENTING! -->
+  <!-- SCRIPTS -->
   <script src="config.js"></script>
   <script src="ui-helper.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
 
+  <!-- CEK LOGIN DENGAN AMAN -->
   <script>
-    // Cek login setelah semua script load
-    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-      window.location.href = 'login.html';
-    }
+    (function () {
+      var isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+      console.log('🔐 Index page - isLoggedIn:', isLoggedIn);
+
+      if (!isLoggedIn) {
+        console.log('❌ Not logged in, redirecting to login.html');
+        window.location.href = 'login.html';
+      } else {
+        console.log('✅ User already logged in');
+      }
+    })();
   </script>
 </body>
 

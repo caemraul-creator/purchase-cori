@@ -165,17 +165,6 @@ td button,
   gap: 10px;
 }
 
-.last-buying-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  align-items: flex-end;
-}
-
-.last-buying-section .full {
-  grid-column: span 1;
-}
-
 /* =====================
    TABLE & PAGINATION
 ===================== */
@@ -357,14 +346,6 @@ td {
 
   .form-grid .full {
     grid-column: span 1 !important;
-  }
-
-  .last-buying-section {
-    grid-template-columns: 1fr;
-  }
-
-  .last-buying-section .full {
-    grid-column: span 1;
   }
 
   .head-bar {

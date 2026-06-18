@@ -1,13 +1,13 @@
 /**
  * auth.js - Authentication & Authorization
- * FINAL VERSION - Fixed
+ * FINAL VERSION - TANPA REDIRECT LOOP
  */
 
 // ===============================
 // CONFIGURATION
 // ===============================
 
-const AUTH_CONFIG = {
+var AUTH_CONFIG = {
   debug: true,
   sessionTimeout: 8 // hours
 };
@@ -16,9 +16,11 @@ const AUTH_CONFIG = {
 // UTILITY FUNCTIONS
 // ===============================
 
-function debugLog(...args) {
+function debugLog() {
   if (AUTH_CONFIG.debug) {
-    console.log(`[AUTH] ${new Date().toLocaleTimeString()}`, ...args);
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift('[AUTH] ' + new Date().toLocaleTimeString());
+    console.log.apply(console, args);
   }
 }
 
@@ -40,19 +42,9 @@ function getCurrentPage() {
 // ===============================
 
 function checkAuth() {
-  const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+  var isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
   debugLog('checkAuth:', isLoggedIn);
-
-  if (!isLoggedIn) {
-    if (typeof showToast === 'function') {
-      showToast('Silakan login terlebih dahulu', 'error');
-    }
-    setTimeout(() => {
-      window.location.href = 'login.html';
-    }, 500);
-    return false;
-  }
-  return true;
+  return isLoggedIn;
 }
 
 function checkPermission(page) {
@@ -63,8 +55,8 @@ function checkPermission(page) {
     return false;
   }
 
-  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  const role = normalizeRole(rawRole);
+  var rawRole = sessionStorage.getItem('userRole') || 'viewer';
+  var role = normalizeRole(rawRole);
   debugLog('User role:', role);
 
   if (typeof PERMISSIONS === 'undefined') {
@@ -72,27 +64,15 @@ function checkPermission(page) {
     return true;
   }
 
-  const allowedPages = PERMISSIONS[role] || [];
-  const hasAccess = allowedPages.includes(page);
+  var allowedPages = PERMISSIONS[role] || [];
+  var hasAccess = allowedPages.indexOf(page) !== -1;
 
   if (hasAccess) {
-    debugLog(`✅ Access granted: ${role} → ${page}`);
+    debugLog('✅ Access granted: ' + role + ' → ' + page);
     return true;
   }
 
-  debugLog(`❌ Access denied: ${role} tidak boleh akses ${page}`);
-
-  if (allowedPages.length > 0) {
-    const defaultPage = allowedPages[0];
-    const roleName = ROLE_NAMES && ROLE_NAMES[role] ? ROLE_NAMES[role] : role;
-
-    setTimeout(() => {
-      alert(`Maaf, Anda tidak memiliki akses ke halaman ini.\n\nSebagai ${roleName}, Anda hanya dapat mengakses:\n• ${allowedPages.join('\n• ')}`);
-      sessionStorage.setItem('currentPage', defaultPage);
-      window.location.reload();
-    }, 100);
-  }
-
+  debugLog('❌ Access denied: ' + role + ' tidak boleh akses ' + page);
   return false;
 }
 
@@ -101,27 +81,27 @@ function checkPermission(page) {
 // ===============================
 
 function getCurrentUser() {
-  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  const role = normalizeRole(rawRole);
-  const username = sessionStorage.getItem('username') || 'User';
-  const fullName = sessionStorage.getItem('fullName') || username;
+  var rawRole = sessionStorage.getItem('userRole') || 'viewer';
+  var role = normalizeRole(rawRole);
+  var username = sessionStorage.getItem('username') || 'User';
+  var fullName = sessionStorage.getItem('fullName') || username;
 
-  let roleName = rawRole;
+  var roleName = rawRole;
   if (typeof ROLE_NAMES !== 'undefined' && ROLE_NAMES[role]) {
     roleName = ROLE_NAMES[role];
   }
 
   return {
-    username,
-    fullName,
-    role,
-    roleName,
+    username: username,
+    fullName: fullName,
+    role: role,
+    roleName: roleName,
     initial: username.charAt(0).toUpperCase()
   };
 }
 
 function setUserSession(username, fullName, role) {
-  debugLog('Setting user session:', { username, role });
+  debugLog('Setting user session:', { username: username, role: role });
   sessionStorage.setItem('username', username);
   sessionStorage.setItem('fullName', fullName);
   sessionStorage.setItem('userRole', role);
@@ -135,10 +115,10 @@ function clearUserSession() {
 }
 
 function validateSession() {
-  const loginTime = sessionStorage.getItem('loginTime');
+  var loginTime = sessionStorage.getItem('loginTime');
   if (!loginTime) return false;
-  const elapsed = Date.now() - new Date(loginTime).getTime();
-  const maxMs = AUTH_CONFIG.sessionTimeout * 60 * 60 * 1000;
+  var elapsed = Date.now() - new Date(loginTime).getTime();
+  var maxMs = AUTH_CONFIG.sessionTimeout * 60 * 60 * 1000;
   if (elapsed > maxMs) {
     debugLog('Session expired');
     clearUserSession();
@@ -159,7 +139,7 @@ function logout() {
 }
 
 function navigateTo(page) {
-  debugLog(`Navigating to: ${page}`);
+  debugLog('Navigating to: ' + page);
   sessionStorage.setItem('currentPage', page);
 
   if (typeof renderPage === 'function') {
@@ -174,15 +154,15 @@ function navigateTo(page) {
 }
 
 function hasAccessTo(page) {
-  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  const role = normalizeRole(rawRole);
+  var rawRole = sessionStorage.getItem('userRole') || 'viewer';
+  var role = normalizeRole(rawRole);
   if (typeof PERMISSIONS === 'undefined') return true;
-  const allowedPages = PERMISSIONS[role] || [];
-  return allowedPages.includes(page);
+  var allowedPages = PERMISSIONS[role] || [];
+  return allowedPages.indexOf(page) !== -1;
 }
 
 // ===============================
-// INITIALIZATION
+// INITIALIZATION - TANPA REDIRECT LOOP
 // ===============================
 
 function initAuth() {
@@ -193,26 +173,8 @@ function initAuth() {
     username: sessionStorage.getItem('username')
   });
 
-  const currentPage = sessionStorage.getItem('currentPage') || 'dashboard';
-  const isLoginPage = window.location.pathname.includes('login.html');
-
-  if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-    if (!isLoginPage) {
-      debugLog('User not logged in, redirecting to login');
-      setTimeout(() => {
-        window.location.href = 'login.html';
-      }, 100);
-    }
-    return;
-  }
-
-  if (isLoginPage && sessionStorage.getItem('isLoggedIn') === 'true') {
-    window.location.href = 'index.html';
-    return;
-  }
-
   // Session validation
-  setInterval(() => {
+  setInterval(function () {
     if (sessionStorage.getItem('isLoggedIn') === 'true' && !validateSession()) {
       alert('Sesi Anda telah berakhir. Silakan login kembali.');
       window.location.href = 'login.html';
@@ -236,26 +198,27 @@ window.initAuth = initAuth;
 
 // Auto initialize
 document.addEventListener('DOMContentLoaded', function () {
-  const tryInit = (attempt = 0) => {
+  var tryInit = function (attempt) {
+    attempt = attempt || 0;
     if (typeof PERMISSIONS !== 'undefined' || attempt >= 15) {
       setTimeout(initAuth, 200);
     } else {
-      setTimeout(() => tryInit(attempt + 1), 100);
+      setTimeout(function () { tryInit(attempt + 1); }, 100);
     }
   };
   tryInit();
 });
 
 window.authDebug = {
-  getCurrentPage,
-  getCurrentUser,
-  checkPermission,
-  hasAccessTo,
+  getCurrentPage: getCurrentPage,
+  getCurrentUser: getCurrentUser,
+  checkPermission: checkPermission,
+  hasAccessTo: hasAccessTo,
   getRole: function () {
     return normalizeRole(sessionStorage.getItem('userRole'));
   },
   getAllowedPages: function () {
-    const role = normalizeRole(sessionStorage.getItem('userRole'));
+    var role = normalizeRole(sessionStorage.getItem('userRole'));
     return PERMISSIONS[role] || [];
   }
 };
