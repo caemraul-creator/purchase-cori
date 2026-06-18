@@ -1,5 +1,59 @@
 /**
  * app.js - ALL LOGIC IN ONE FILE
+ */
+
+// ============================================
+// 0. CEK LOGIN
+// ============================================
+
+(function () {
+  var isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+  console.log('🔐 App.js - isLoggedIn:', isLoggedIn);
+
+  if (!isLoggedIn) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  console.log('✅ User is logged in');
+})();
+
+// ============================================
+// 0.5. PASTIKAN FUNGSI TERSEDIA
+// ============================================
+
+if (typeof normalizeRole === 'undefined') {
+  window.normalizeRole = function (role) {
+    if (!role) return 'viewer';
+    return String(role).toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  };
+}
+
+if (typeof checkPermission === 'undefined') {
+  window.checkPermission = function (page) {
+    return sessionStorage.getItem('isLoggedIn') === 'true';
+  };
+}
+
+// ============================================
+// 0.6. TAMBAHKAN FUNGSI FORCE SYNC DI GLOBAL
+// ============================================
+
+window.forceSync = function () {
+  if (typeof syncAllSheets === 'function') {
+    syncAllSheets();
+  } else {
+    showToast('⚠️ Firebase tidak aktif', 'error');
+  }
+};
+
+// ============================================
+// LANJUTKAN DENGAN KODE APP.JS YANG SUDAH ADA
+// ============================================
+// ... (semua kode app.js sebelumnya di sini) ...
+
+/**
+ * app.js - ALL LOGIC IN ONE FILE
  * Gabungan dari: app.js, approval.js, dashboard.js, done.js, rekap.js, rejected.js, print.js
  * Versi SPA - Single Page Application
  * LENGKAP - SATU FILE

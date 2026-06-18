@@ -10,27 +10,24 @@
 
   <title>Purchase Request System</title>
 
-  <!-- Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <!-- Styles -->
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="style-mobile.css">
   <link rel="icon" href="data:,">
 
-  <!-- Firebase SDK - PASTIKAN VERSI INI -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- html2pdf untuk export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body class="theme-dashboard">
 
-  <!-- MOBILE NAV - Bottom Navigation -->
+  <!-- MOBILE NAV -->
   <nav id="mobileNav" class="mobile-nav" style="display:none;">
     <a href="#" onclick="navigateTo('dashboard')" class="nav-item active" data-page="dashboard">
       <span class="nav-icon">🏠</span>
@@ -54,44 +51,31 @@
     </a>
   </nav>
 
-  <!-- USER FLOATER -->
   <div id="userFloater" class="user-floater"></div>
-
-  <!-- TOAST -->
   <div id="toast" class="toast"></div>
-
-  <!-- GLOBAL LOADING -->
   <div id="globalLoading"></div>
 
-  <!-- OFFLINE INDICATOR -->
   <div id="offlineIndicator"
     style="display:none;background:#f59e0b;color:#fff;text-align:center;padding:8px;font-size:12px;font-weight:600;position:sticky;top:0;z-index:999;">
     ⚠️ Mode Offline - Data dari cache
   </div>
 
-  <!-- APP CONTAINER -->
-  <div id="app">
-    <!-- Semua page container akan di-render oleh JavaScript -->
-  </div>
+  <div id="app"></div>
 
-  <!-- SCRIPTS - URUTAN PENTING -->
   <script src="config.js"></script>
   <script src="firebase-helper.js"></script>
   <script src="ui-helper.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
 
-  <!-- INIT -->
   <script>
     (function () {
       'use strict';
 
-      // Cek login
       var isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
       console.log('🔐 Index page - isLoggedIn:', isLoggedIn);
 
       if (!isLoggedIn) {
-        console.log('❌ Not logged in, redirecting to login.html');
         window.location.href = 'login.html';
         return;
       }
@@ -100,20 +84,23 @@
       if (USE_FIREBASE && typeof initFirebase === 'function') {
         var initResult = initFirebase();
         if (initResult) {
-          console.log('✅ Firebase ready, preloading data...');
+          console.log('✅ Firebase ready');
+
+          // Tambahkan tombol sync
           setTimeout(function () {
-            if (typeof preloadData === 'function') {
-              preloadData(['', 'done', 'rejected']);
+            if (typeof addSyncButton === 'function') {
+              addSyncButton();
             }
-          }, 1000);
-        } else {
-          console.warn('⚠️ Firebase not initialized, using API only');
+          }, 1500);
+
+          // Auto sync every 5 minutes
+          if (typeof startAutoSync === 'function') {
+            startAutoSync(5);
+          }
         }
-      } else {
-        console.log('ℹ️ Firebase disabled, using API only');
       }
 
-      // Cek offline status
+      // Offline indicator
       window.addEventListener('online', function () {
         var indicator = document.getElementById('offlineIndicator');
         if (indicator) indicator.style.display = 'none';
@@ -130,18 +117,13 @@
         }
       });
 
-      // Mobile nav - update active state
+      // Mobile nav
       function updateMobileNav(page) {
         document.querySelectorAll('.nav-item').forEach(function (el) {
-          if (el.dataset.page === page) {
-            el.classList.add('active');
-          } else {
-            el.classList.remove('active');
-          }
+          el.classList.toggle('active', el.dataset.page === page);
         });
       }
 
-      // Override navigateTo untuk update nav
       var originalNavigateTo = window.navigateTo;
       if (typeof originalNavigateTo === 'function') {
         window.navigateTo = function (page) {
@@ -150,22 +132,15 @@
         };
       }
 
-      // Tampilkan mobile nav di mobile
       function checkMobileNav() {
         var nav = document.getElementById('mobileNav');
         if (!nav) return;
-
-        if (window.innerWidth <= 768) {
-          nav.style.display = 'flex';
-        } else {
-          nav.style.display = 'none';
-        }
+        nav.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
       }
 
       checkMobileNav();
       window.addEventListener('resize', checkMobileNav);
 
-      // Update nav sesuai page saat ini
       var currentPage = sessionStorage.getItem('currentPage') || 'dashboard';
       updateMobileNav(currentPage);
 

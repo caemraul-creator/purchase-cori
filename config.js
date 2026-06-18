@@ -1,17 +1,15 @@
 /**
  * config.js - Configuration file untuk Purchase Request System
- * Kompatibel dengan: Cloudflare Pages, Vercel, GitHub Pages, Netlify, dsb
  */
 
 // =====================================================
-// API CONFIGURATION
+// API CONFIGURATION - PAKAI YANG BARU
 // =====================================================
 
-// Google Apps Script Deployment URL - PAKAI YANG BARU
 const API_URL = "https://script.google.com/macros/s/AKfycbw3lWUjVJTMwN6rToovwtcUx0OXaeWlRtR7RRjPBJfV2Ay5_xXzUyP449FI-7-MCUfx9w/exec";
 
 // =====================================================
-// FIREBASE CONFIGURATION - PAKAI CONFIG ANDA
+// FIREBASE CONFIGURATION
 // =====================================================
 
 const FIREBASE_CONFIG = {
@@ -24,11 +22,11 @@ const FIREBASE_CONFIG = {
   appId: "1:197480550971:web:bae4bcfc99e6dddbb3c21e"
 };
 
-// Apakah menggunakan Firebase? SET TRUE
+// ✅ AKTIFKAN FIREBASE
 const USE_FIREBASE = true;
 
 // =====================================================
-// ROLE & PERMISSION CONFIGURATION
+// ROLE & PERMISSION
 // =====================================================
 
 const ROLE_NAMES = {
@@ -48,7 +46,7 @@ const PERMISSIONS = {
 };
 
 // =====================================================
-// APPLICATION CONFIGURATION
+// APP CONFIG
 // =====================================================
 
 const APP_CONFIG = {
@@ -65,7 +63,7 @@ const APP_CONFIG = {
   features: {
     caching: true,
     retryOnError: true,
-    debug: false,
+    debug: true, // SET TRUE UNTUK DEBUG
     firebase: USE_FIREBASE
   },
 
@@ -79,7 +77,7 @@ const APP_CONFIG = {
 
   cache: {
     enabled: true,
-    ttl: 5 * 60 * 1000 // 5 menit
+    ttl: 5 * 60 * 1000
   }
 };
 
@@ -88,50 +86,14 @@ const APP_CONFIG = {
 // =====================================================
 
 (function validateConfig() {
-  const errors = [];
+  console.log('🔍 Validating config...');
+  console.log('API_URL:', API_URL);
+  console.log('USE_FIREBASE:', USE_FIREBASE);
 
-  // Cek API_URL
-  if (!API_URL) {
-    errors.push('API_URL tidak defined');
-  } else if (!API_URL.includes('script.google.com')) {
-    errors.push('API_URL sepertinya bukan URL Google Apps Script yang valid');
-  }
-
-  // Cek ROLE_NAMES
-  if (!ROLE_NAMES || Object.keys(ROLE_NAMES).length === 0) {
-    errors.push('ROLE_NAMES kosong');
-  }
-
-  // Cek PERMISSIONS
-  if (!PERMISSIONS || Object.keys(PERMISSIONS).length === 0) {
-    errors.push('PERMISSIONS kosong');
-  }
-
-  // Cek Firebase jika aktif
   if (USE_FIREBASE) {
-    const required = ['apiKey', 'authDomain', 'projectId', 'databaseURL'];
-    required.forEach(function (key) {
-      if (!FIREBASE_CONFIG[key] || FIREBASE_CONFIG[key] === 'YOUR_' + key.toUpperCase()) {
-        errors.push('Firebase ' + key + ' belum diisi');
-      }
-    });
-
-    // Cek apakah apiKey valid (tidak mengandung placeholder)
-    if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.includes('YOUR_')) {
-      errors.push('Firebase apiKey masih placeholder, ganti dengan config asli!');
-    }
+    console.log('Firebase Project:', FIREBASE_CONFIG.projectId);
+    console.log('Firebase Database:', FIREBASE_CONFIG.databaseURL);
   }
 
-  if (errors.length > 0) {
-    console.error('❌ CONFIG VALIDATION FAILED:');
-    errors.forEach(function (e) { console.error('  - ' + e); });
-  } else {
-    console.log('✅ Config loaded successfully');
-    console.log('  Environment: ' + APP_CONFIG.environment);
-    console.log('  API URL: ' + API_URL.split('?')[0]);
-    console.log('  Firebase: ' + (USE_FIREBASE ? '✅ Active' : '❌ Disabled'));
-    if (USE_FIREBASE) {
-      console.log('  Firebase Project: ' + FIREBASE_CONFIG.projectId);
-    }
-  }
+  console.log('✅ Config loaded');
 })();

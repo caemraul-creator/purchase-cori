@@ -1,16 +1,15 @@
 /* ============================
-   GLOBAL UI HELPERS - WITH FIREBASE
+   GLOBAL UI HELPERS
 ============================ */
 
 // =========================================
-// 1. CACHE & OPTIMIZED LOADING SYSTEM
+// 1. CACHE SYSTEM
 // =========================================
-let dataCache = {};
-const CACHE_TIMEOUT = 5 * 60 * 1000; // 5 menit
-let pendingRequests = {};
+var dataCache = {};
+var CACHE_TIMEOUT = 5 * 60 * 1000;
 
 function getCachedData(key) {
-  const cached = dataCache[key];
+  var cached = dataCache[key];
   if (!cached) return null;
   if (Date.now() - cached.timestamp > CACHE_TIMEOUT) {
     delete dataCache[key];
@@ -23,10 +22,13 @@ function setCachedData(key, data) {
   dataCache[key] = { data: data, timestamp: Date.now() };
 }
 
-// Global Loading Indicator
+// =========================================
+// 2. GLOBAL LOADING
+// =========================================
+
 document.addEventListener('DOMContentLoaded', function () {
   if (!document.getElementById('globalLoading')) {
-    const loader = document.createElement('div');
+    var loader = document.createElement('div');
     loader.id = 'globalLoading';
     loader.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.8);display:none;justify-content:center;align-items:center;z-index:9999;';
     loader.innerHTML = `
@@ -42,53 +44,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function showLoading(show) {
   if (show === undefined) show = true;
-  const loader = document.getElementById('globalLoading');
+  var loader = document.getElementById('globalLoading');
   if (loader) loader.style.display = show ? 'flex' : 'none';
 }
 
 // =========================================
-// 2. MAIN LOAD FUNCTION - DENGAN FIREBASE
+// 3. LOAD DATA - GUNakan loadDataSmart
 // =========================================
 
 function loadDataOptimized(callback, sheetName) {
   if (sheetName === undefined) sheetName = '';
 
-  // Gunakan loadDataSmart jika Firebase aktif
+  // Gunakan loadDataSmart dari firebase-helper.js
   if (typeof loadDataSmart === 'function' && USE_FIREBASE) {
     loadDataSmart(callback, sheetName, false);
     return;
   }
 
-  // Fallback ke load biasa
+  // Fallback
   loadDataLegacy(callback, sheetName);
 }
 
 function loadDataLegacy(callback, sheetName) {
   if (sheetName === undefined) sheetName = '';
-  const cacheKey = sheetName || 'main';
+  var cacheKey = sheetName || 'main';
 
-  const cached = getCachedData(cacheKey);
+  var cached = getCachedData(cacheKey);
   if (cached) {
     if (callback) setTimeout(function () { callback(cached); }, 0);
     return;
   }
 
-  if (pendingRequests[cacheKey]) {
-    pendingRequests[cacheKey].push(callback);
-    return;
-  }
-
-  pendingRequests[cacheKey] = [callback];
   showLoading(true);
 
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substr(2, 9);
-  const cbName = 'cb_' + cacheKey.replace(/[^a-zA-Z0-9]/g, '_') + '_' + timestamp + '_' + random;
+  var timestamp = Date.now();
+  var random = Math.random().toString(36).substr(2, 9);
+  var cbName = 'cb_legacy_' + timestamp + '_' + random;
 
-  let isResolved = false;
-  let timeoutId = null;
-  let retryCount = 0;
-  const MAX_RETRIES = 3;
+  var isResolved = false;
+  var timeoutId = null;
 
   window[cbName] = function (data) {
     if (isResolved) return;
@@ -96,89 +90,75 @@ function loadDataLegacy(callback, sheetName) {
     if (timeoutId) clearTimeout(timeoutId);
 
     try {
-      if (!data) throw new Error('Empty response from API');
-      if (typeof data === 'string') throw new Error('Invalid data format');
-
+      if (!data || typeof data === 'string') {
+        if (callback) callback([]);
+        return;
+      }
       setCachedData(cacheKey, data);
-      const callbacks = pendingRequests[cacheKey] || [];
-      delete pendingRequests[cacheKey];
-
-      callbacks.forEach(function (cb) {
-        if (cb && typeof cb === 'function') {
-          try { cb(data); } catch (err) { console.error('Error in callback:', err); }
-        }
-      });
+      if (callback) callback(data);
     } catch (err) {
-      console.error('[' + cbName + '] Error:', err);
-      showToast('Error: ' + err.message, 'error');
+      console.error('Error:', err);
+      if (callback) callback([]);
     } finally {
-      cleanup(cbName);
+      cleanupLegacy(cbName);
       showLoading(false);
     }
   };
-
-  function handleError(reason) {
-    if (isResolved) return;
-    isResolved = true;
-    if (timeoutId) clearTimeout(timeoutId);
-
-    const callbacks = pendingRequests[cacheKey] || [];
-    delete pendingRequests[cacheKey];
-
-    if (retryCount < MAX_RETRIES) {
-      retryCount++;
-      const delayMs = 1000 * retryCount;
-      cleanup(cbName);
-      showLoading(false);
-      setTimeout(function () {
-        loadDataLegacy(callback, sheetName);
-      }, delayMs);
-    } else {
-      showToast('Gagal memuat data dari ' + (sheetName || 'main'), 'error');
-      cleanup(cbName);
-      showLoading(false);
-    }
-  }
 
   timeoutId = setTimeout(function () {
-    if (!isResolved) handleError('JSONP Timeout (15s)');
+    if (!isResolved) {
+      isResolved = true;
+      cleanupLegacy(cbName);
+      showLoading(false);
+      if (callback) callback([]);
+    }
   }, 15000);
 
-  const script = document.createElement('script');
-  script.id = 'script-' + cbName;
-  script.async = true;
-
   try {
-    const url = new URL(API_URL);
+    var url = new URL(API_URL);
     url.searchParams.set('action', 'read');
-    url.searchParams.set('sheet', sheetName);
+    if (sheetName) url.searchParams.set('sheet', sheetName);
     url.searchParams.set('callback', cbName);
     url.searchParams.set('_t', timestamp);
+
+    var script = document.createElement('script');
+    script.id = 'script-' + cbName;
     script.src = url.toString();
+    script.async = true;
+    script.onerror = function () {
+      if (!isResolved) {
+        isResolved = true;
+        cleanupLegacy(cbName);
+        showLoading(false);
+        if (callback) callback([]);
+      }
+    };
+    document.body.appendChild(script);
   } catch (err) {
     console.error('API_URL Error:', err);
-    handleError('Invalid API_URL');
-    return;
+    cleanupLegacy(cbName);
+    showLoading(false);
+    if (callback) callback([]);
   }
+}
 
-  script.onerror = function () {
-    if (!isResolved) handleError('Script load failed');
-  };
-
-  document.body.appendChild(script);
+function cleanupLegacy(cbName) {
+  delete window[cbName];
+  var scriptEl = document.getElementById('script-' + cbName);
+  if (scriptEl && scriptEl.parentNode) {
+    scriptEl.parentNode.removeChild(scriptEl);
+  }
 }
 
 function loadMultipleSheets(sheets, onAllLoaded) {
-  // Gunakan loadMultipleSheetsSmart jika ada
   if (typeof loadMultipleSheetsSmart === 'function' && USE_FIREBASE) {
     loadMultipleSheetsSmart(sheets, onAllLoaded, false);
     return;
   }
 
-  // Fallback
-  const results = {};
-  let loadedCount = 0;
-  const totalSheets = sheets.length;
+  var results = {};
+  var loadedCount = 0;
+  var totalSheets = sheets.length;
 
   if (totalSheets === 0) {
     if (onAllLoaded) onAllLoaded(results);
@@ -187,7 +167,7 @@ function loadMultipleSheets(sheets, onAllLoaded) {
 
   sheets.forEach(function (sheet) {
     loadDataOptimized(function (data) {
-      results[sheet] = data;
+      results[sheet] = data || [];
       loadedCount++;
       if (loadedCount === totalSheets && onAllLoaded) {
         try { onAllLoaded(results); } catch (err) { console.error('Error in callback:', err); }
@@ -196,22 +176,14 @@ function loadMultipleSheets(sheets, onAllLoaded) {
   });
 }
 
-function cleanup(cbName) {
-  delete window[cbName];
-  const scriptEl = document.getElementById('script-' + cbName);
-  if (scriptEl && scriptEl.parentNode) {
-    scriptEl.parentNode.removeChild(scriptEl);
-  }
-}
-
 // =========================================
-// 3. FORMATTERS (sama seperti sebelumnya)
+// 4. FORMATTERS
 // =========================================
 
 function formatDate(v) {
   if (!v || v === 'Never Buy') return v || '';
   try {
-    const d = new Date(v);
+    var d = new Date(v);
     if (isNaN(d.getTime())) return v;
     return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
   } catch (e) { return v; }
@@ -220,7 +192,7 @@ function formatDate(v) {
 function formatDateTime(v) {
   if (!v) return '';
   try {
-    const d = new Date(v);
+    var d = new Date(v);
     if (isNaN(d.getTime())) return v;
     return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   } catch (e) { return v; }
@@ -241,7 +213,7 @@ function formatNumber(v) {
 }
 
 // =========================================
-// 4. UI UTILS
+// 5. UI UTILS
 // =========================================
 
 function lazyRenderRows(rowsHtmlArray, tbody, batchSize) {
@@ -250,10 +222,10 @@ function lazyRenderRows(rowsHtmlArray, tbody, batchSize) {
   tbody.innerHTML = '';
   if (rowsHtmlArray.length === 0) return;
 
-  let index = 0;
+  var index = 0;
   function renderBatch() {
     if (index >= rowsHtmlArray.length) return;
-    const end = Math.min(index + batchSize, rowsHtmlArray.length);
+    var end = Math.min(index + batchSize, rowsHtmlArray.length);
     tbody.insertAdjacentHTML('beforeend', rowsHtmlArray.slice(index, end).join(''));
     index = end;
     if (index < rowsHtmlArray.length) requestAnimationFrame(renderBatch);
@@ -262,7 +234,7 @@ function lazyRenderRows(rowsHtmlArray, tbody, batchSize) {
 }
 
 function debounceSearch(func, wait) {
-  let timeout = null;
+  var timeout = null;
   return function executedFunction() {
     var args = arguments;
     var context = this;
@@ -275,14 +247,14 @@ function debounceSearch(func, wait) {
 }
 
 // =========================================
-// 5. TOAST NOTIFICATION
+// 6. TOAST
 // =========================================
 
 function showToast(msg, type, duration) {
   if (type === undefined) type = 'success';
   if (duration === undefined) duration = 3000;
 
-  let toast = document.getElementById('toast');
+  var toast = document.getElementById('toast');
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'toast';
@@ -309,21 +281,21 @@ function showToast(msg, type, duration) {
 }
 
 // =========================================
-// 6. USER SESSION MANAGEMENT
+// 7. USER STATUS
 // =========================================
 
 function renderUserStatus() {
-  const container = document.getElementById('userFloater');
+  var container = document.getElementById('userFloater');
   if (!container) return;
 
-  const user = sessionStorage.getItem('username') || 'User';
-  const rawRole = sessionStorage.getItem('userRole') || 'viewer';
-  const role = rawRole.toLowerCase().trim().replace(/ /g, '_');
-  let roleName = rawRole;
+  var user = sessionStorage.getItem('username') || 'User';
+  var rawRole = sessionStorage.getItem('userRole') || 'viewer';
+  var role = rawRole.toLowerCase().trim().replace(/ /g, '_');
+  var roleName = rawRole;
   if (typeof ROLE_NAMES !== 'undefined' && ROLE_NAMES[role]) {
     roleName = ROLE_NAMES[role];
   }
-  const initial = user.charAt(0).toUpperCase();
+  var initial = user.charAt(0).toUpperCase();
 
   container.innerHTML = `
     <div class="user-avatar">${initial}</div>
@@ -342,7 +314,10 @@ function handleLogout() {
   }
 }
 
-// Export
+// =========================================
+// 8. EXPORT
+// =========================================
+
 window.showToast = showToast;
 window.formatDate = formatDate;
 window.formatDateTime = formatDateTime;
