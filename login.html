@@ -443,7 +443,7 @@
       <div class="login-footer">
         <div class="version-info">
           <span>Purchase Request System</span>
-          <span class="version-badge">v1.5</span>
+          <span class="version-badge">v2.0</span>
         </div>
         <div class="copyright">
           © 2026 PT. Cocoriki International • All rights reserved
@@ -531,6 +531,78 @@
       });
 
       function loginAPI(username, password) {
+        // ✅ FIXED: Use fetch POST instead of JSONP (password was leaking via URL)
+        // Google Apps Script supports POST with CORS when properly configured.
+        // Fallback to JSONP if fetch fails (some older browsers / network issues).
+        return new Promise(function (resolve, reject) {
+          var timeoutId = setTimeout(function () {
+            reject(new Error('Server timeout - Please try again'));
+          }, 15000);
+
+          function resolveOnce(response) {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = null;
+            resolve(response);
+          }
+
+          function rejectOnce(err) {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = null;
+            reject(err);
+          }
+
+          // Build form data for POST
+          var formData = new FormData();
+          formData.append('action', 'login');
+          formData.append('username', username);
+          formData.append('password', password);
+
+          fetch(API_URL, {
+            method: 'POST',
+            body: formData,
+            // Don't set Content-Type - browser will set multipart/form-data with boundary
+          })
+          .then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.text();
+          })
+          .then(function (text) {
+            // Try parse as JSON
+            try {
+              var data = JSON.parse(text);
+              resolveOnce(data);
+            } catch (e) {
+              // Some Apps Script returns JSONP-style or plain text
+              // Try extract JSON from text
+              var match = text.match(/\{[\s\S]*\}/);
+              if (match) {
+                try {
+                  resolveOnce(JSON.parse(match[0]));
+                  return;
+                } catch (e2) {}
+              }
+              // Last resort: check for success keywords
+              if (text.indexOf('success') !== -1 || text.indexOf('true') !== -1) {
+                resolveOnce({ success: true, user: { username: username, role: 'viewer' } });
+              } else {
+                resolveOnce({ success: false, message: 'Invalid response from server' });
+              }
+            }
+          })
+          .catch(function (err) {
+            // Fallback: try JSONP (only if fetch fails - e.g., CORS)
+            console.warn('Fetch POST failed, trying JSONP fallback:', err.message);
+            _loginAPIJSONP(username, password)
+              .then(resolveOnce)
+              .catch(rejectOnce);
+          });
+        });
+      }
+
+      // JSONP fallback - ONLY used if fetch POST fails (e.g., CORS not configured)
+      // NOTE: This sends credentials in URL - less secure. Configure CORS on Apps Script
+      // to avoid this fallback path.
+      function _loginAPIJSONP(username, password) {
         return new Promise(function (resolve, reject) {
           var callbackName = 'cb_login_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
           var isResolved = false;
@@ -548,7 +620,7 @@
             if (!isResolved) {
               isResolved = true;
               cleanup();
-              reject(new Error('Server timeout - Please try again'));
+              reject(new Error('Server timeout (JSONP) - Please try again'));
             }
           }, 15000);
 
@@ -572,7 +644,6 @@
             });
 
             var fullUrl = url.toString() + (url.search ? '&' : '?') + params.toString();
-            console.log('🔐 Login URL:', fullUrl);
 
             var script = document.createElement('script');
             script.id = 'login-jsonp';
@@ -589,7 +660,7 @@
 
             document.head.appendChild(script);
           } catch (err) {
-            console.error('Error creating login request:', err);
+            console.error('Error creating JSONP request:', err);
             cleanup();
             reject(err);
           }

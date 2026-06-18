@@ -27,7 +27,7 @@
 
 <body class="theme-dashboard">
 
-  <!-- MOBILE NAV -->
+  <!-- MOBILE NAV - 7 ITEMS -->
   <nav id="mobileNav" class="mobile-nav" style="display:none;">
     <a href="#" onclick="navigateTo('dashboard')" class="nav-item active" data-page="dashboard">
       <span class="nav-icon">🏠</span>
@@ -39,7 +39,7 @@
     </a>
     <a href="#" onclick="navigateTo('approval')" class="nav-item" data-page="approval">
       <span class="nav-icon">📬</span>
-      <span class="nav-label">Approval</span>
+      <span class="nav-label">Approve</span>
     </a>
     <a href="#" onclick="navigateTo('done')" class="nav-item" data-page="done">
       <span class="nav-icon">📦</span>
@@ -48,6 +48,14 @@
     <a href="#" onclick="navigateTo('rekap')" class="nav-item" data-page="rekap">
       <span class="nav-icon">📊</span>
       <span class="nav-label">Rekap</span>
+    </a>
+    <a href="#" onclick="navigateTo('rejected')" class="nav-item" data-page="rejected">
+      <span class="nav-icon">⛔</span>
+      <span class="nav-label">Reject</span>
+    </a>
+    <a href="#" onclick="navigateTo('print')" class="nav-item" data-page="print">
+      <span class="nav-icon">📥</span>
+      <span class="nav-label">Export</span>
     </a>
   </nav>
 
@@ -73,9 +81,18 @@
       'use strict';
 
       var isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-      console.log('🔐 Index page - isLoggedIn:', isLoggedIn);
+      if (typeof debugLog === 'function') debugLog('🔐 Index page - isLoggedIn:', isLoggedIn);
 
       if (!isLoggedIn) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // ✅ Validate session on init (cross-check with auth.js)
+      if (typeof validateSession === 'function' && !validateSession()) {
+        if (typeof debugLog === 'function') debugLog('Session expired on index.html init');
+        if (typeof clearUserSession === 'function') clearUserSession();
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
         window.location.href = 'login.html';
         return;
       }
@@ -84,7 +101,7 @@
       if (USE_FIREBASE && typeof initFirebase === 'function') {
         var initResult = initFirebase();
         if (initResult) {
-          console.log('✅ Firebase ready');
+          if (typeof debugLog === 'function') debugLog('✅ Firebase ready');
 
           // Tambahkan tombol sync
           setTimeout(function () {
@@ -93,9 +110,14 @@
             }
           }, 1500);
 
-          // Auto sync every 5 minutes
-          if (typeof startAutoSync === 'function') {
-            startAutoSync(5);
+          // ✅ Auto sync - silent by default (no toast spam)
+          // Read interval from APP_CONFIG (0 = disabled)
+          var syncInterval = 0;
+          if (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.features && APP_CONFIG.features.autoSyncInterval) {
+            syncInterval = APP_CONFIG.features.autoSyncInterval;
+          }
+          if (syncInterval > 0 && typeof startAutoSync === 'function') {
+            startAutoSync(Math.round(syncInterval / 60000)); // ms → minutes
           }
         }
       }
@@ -117,18 +139,23 @@
         }
       });
 
-      // Mobile nav
-      function updateMobileNav(page) {
+      // ✅ Mobile nav updater (renamed to avoid conflict with window.updateMobileNav in app.js)
+      window.updateMobileNavGlobal = function (page) {
         document.querySelectorAll('.nav-item').forEach(function (el) {
           el.classList.toggle('active', el.dataset.page === page);
         });
-      }
+      };
 
+      // Wrap navigateTo so mobile nav updates after navigation
       var originalNavigateTo = window.navigateTo;
       if (typeof originalNavigateTo === 'function') {
         window.navigateTo = function (page) {
-          originalNavigateTo(page);
-          updateMobileNav(page);
+          var result = originalNavigateTo(page);
+          // navigateTo returns false if permission denied
+          if (result !== false) {
+            updateMobileNavGlobal(page);
+          }
+          return result;
         };
       }
 
@@ -142,9 +169,9 @@
       window.addEventListener('resize', checkMobileNav);
 
       var currentPage = sessionStorage.getItem('currentPage') || 'dashboard';
-      updateMobileNav(currentPage);
+      updateMobileNavGlobal(currentPage);
 
-      console.log('✅ Mobile & Firebase ready');
+      if (typeof debugLog === 'function') debugLog('✅ Mobile & Firebase ready');
     })();
   </script>
 </body>

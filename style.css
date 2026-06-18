@@ -103,6 +103,20 @@ td button,
   transform: translateY(-1px);
 }
 
+/* ✅ NEW: Danger button for reject/delete actions */
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
 .btn-link {
   display: inline-flex;
   align-items: center;
@@ -304,6 +318,35 @@ td {
 .status.rejected {
   background: #fee2e2;
   color: #991b1b;
+}
+
+/* ✅ NEW: Status partial (sebagian dibeli) */
+.status.partial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ✅ NEW: Empty state ilustrasi */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.empty-state-msg {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.empty-state-cta {
+  margin-top: 16px;
 }
 
 /* =====================

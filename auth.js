@@ -1,6 +1,10 @@
 /**
  * auth.js - Authentication & Authorization
- * FINAL VERSION - TANPA REDIRECT LOOP
+ * REFACTORED v2.0:
+ * - Fixed permission bypass (no more override by app.js)
+ * - Cross-tab session sync via storage event
+ * - Session validation on init (not just every 5 minutes)
+ * - Proper role normalization
  */
 
 // ===============================
@@ -9,19 +13,19 @@
 
 var AUTH_CONFIG = {
   debug: true,
-  sessionTimeout: 8 // hours
+  sessionTimeout: 8, // hours (sync with APP_CONFIG.auth.sessionTimeoutHours)
+  crossTabSync: true
 };
 
 // ===============================
 // UTILITY FUNCTIONS
 // ===============================
 
-function debugLog() {
-  if (AUTH_CONFIG.debug) {
-    var args = Array.prototype.slice.call(arguments);
-    args.unshift('[AUTH] ' + new Date().toLocaleTimeString());
-    console.log.apply(console, args);
-  }
+function debugLogAuth() {
+  if (!AUTH_CONFIG.debug) return;
+  var args = Array.prototype.slice.call(arguments);
+  args.unshift('[AUTH ' + new Date().toLocaleTimeString() + ']');
+  console.log.apply(console, args);
 }
 
 function normalizeRole(role) {
@@ -43,36 +47,43 @@ function getCurrentPage() {
 
 function checkAuth() {
   var isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-  debugLog('checkAuth:', isLoggedIn);
+  debugLogAuth('checkAuth:', isLoggedIn);
+
+  if (isLoggedIn && !validateSession()) {
+    // Session expired
+    clearUserSession();
+    return false;
+  }
+
   return isLoggedIn;
 }
 
 function checkPermission(page) {
-  debugLog('=== PERMISSION CHECK ===');
-  debugLog('Current page:', page);
+  debugLogAuth('=== PERMISSION CHECK ===', 'page:', page);
 
   if (!checkAuth()) {
+    debugLogAuth('❌ Not authenticated');
     return false;
   }
 
   var rawRole = sessionStorage.getItem('userRole') || 'viewer';
   var role = normalizeRole(rawRole);
-  debugLog('User role:', role);
+  debugLogAuth('User role:', role);
 
   if (typeof PERMISSIONS === 'undefined') {
-    console.error('❌ PERMISSIONS tidak defined');
-    return true;
+    debugLogAuth('⚠️ PERMISSIONS undefined, denying all but dashboard');
+    return page === 'dashboard';
   }
 
   var allowedPages = PERMISSIONS[role] || [];
   var hasAccess = allowedPages.indexOf(page) !== -1;
 
   if (hasAccess) {
-    debugLog('✅ Access granted: ' + role + ' → ' + page);
+    debugLogAuth('✅ Access granted:', role, '→', page);
     return true;
   }
 
-  debugLog('❌ Access denied: ' + role + ' tidak boleh akses ' + page);
+  debugLogAuth('❌ Access denied:', role, 'tidak boleh akses', page);
   return false;
 }
 
@@ -96,32 +107,60 @@ function getCurrentUser() {
     fullName: fullName,
     role: role,
     roleName: roleName,
-    initial: username.charAt(0).toUpperCase()
+    initial: (username || 'U').charAt(0).toUpperCase()
   };
 }
 
 function setUserSession(username, fullName, role) {
-  debugLog('Setting user session:', { username: username, role: role });
+  debugLogAuth('Setting user session:', { username: username, role: role });
   sessionStorage.setItem('username', username);
   sessionStorage.setItem('fullName', fullName);
   sessionStorage.setItem('userRole', role);
   sessionStorage.setItem('isLoggedIn', 'true');
   sessionStorage.setItem('loginTime', new Date().toISOString());
+  sessionStorage.setItem('currentPage', 'dashboard');
+
+  // Cross-tab sync: broadcast to other tabs
+  if (AUTH_CONFIG.crossTabSync && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('pr_auth_event', JSON.stringify({
+        type: 'login',
+        username: username,
+        role: role,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      debugLogAuth('LocalStorage sync error:', e);
+    }
+  }
 }
 
 function clearUserSession() {
-  debugLog('Clearing user session');
+  debugLogAuth('Clearing user session');
   sessionStorage.clear();
+
+  // Cross-tab sync: tell other tabs to logout
+  if (AUTH_CONFIG.crossTabSync && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('pr_auth_event', JSON.stringify({
+        type: 'logout',
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      debugLogAuth('LocalStorage sync error:', e);
+    }
+  }
 }
 
 function validateSession() {
   var loginTime = sessionStorage.getItem('loginTime');
   if (!loginTime) return false;
+
   var elapsed = Date.now() - new Date(loginTime).getTime();
   var maxMs = AUTH_CONFIG.sessionTimeout * 60 * 60 * 1000;
+
   if (elapsed > maxMs) {
-    debugLog('Session expired');
-    clearUserSession();
+    debugLogAuth('Session expired (elapsed:', Math.round(elapsed / 60000), 'min)');
     return false;
   }
   return true;
@@ -139,7 +178,17 @@ function logout() {
 }
 
 function navigateTo(page) {
-  debugLog('Navigating to: ' + page);
+  debugLogAuth('Navigating to:', page);
+
+  // ✅ Check permission BEFORE navigate
+  if (!checkPermission(page)) {
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Anda tidak punya akses ke halaman ini', 'error');
+    }
+    debugLogAuth('Navigation blocked - no permission for', page);
+    return false;
+  }
+
   sessionStorage.setItem('currentPage', page);
 
   if (typeof renderPage === 'function') {
@@ -151,37 +200,84 @@ function navigateTo(page) {
   if (typeof renderUserStatus === 'function') {
     renderUserStatus();
   }
+
+  return true;
 }
 
 function hasAccessTo(page) {
   var rawRole = sessionStorage.getItem('userRole') || 'viewer';
   var role = normalizeRole(rawRole);
-  if (typeof PERMISSIONS === 'undefined') return true;
+  if (typeof PERMISSIONS === 'undefined') return page === 'dashboard';
   var allowedPages = PERMISSIONS[role] || [];
   return allowedPages.indexOf(page) !== -1;
 }
 
 // ===============================
-// INITIALIZATION - TANPA REDIRECT LOOP
+// CROSS-TAB SESSION SYNC
+// ===============================
+
+function setupCrossTabSync() {
+  if (!AUTH_CONFIG.crossTabSync || typeof localStorage === 'undefined') return;
+
+  window.addEventListener('storage', function (e) {
+    if (e.key !== 'pr_auth_event' || !e.newValue) return;
+
+    try {
+      var event = JSON.parse(e.newValue);
+      debugLogAuth('Cross-tab event:', event.type);
+
+      if (event.type === 'logout') {
+        // Logout di tab lain → logout juga di tab ini
+        sessionStorage.clear();
+        alert('Sesi telah berakhir (logout dari tab lain).');
+        window.location.href = 'login.html';
+      } else if (event.type === 'login') {
+        // Login di tab lain → reload ke index
+        if (window.location.pathname.indexOf('login.html') !== -1) {
+          window.location.href = 'index.html';
+        }
+      }
+    } catch (err) {
+      debugLogAuth('Cross-tab sync parse error:', err);
+    }
+  });
+}
+
+// ===============================
+// INITIALIZATION
 // ===============================
 
 function initAuth() {
-  debugLog('=== AUTH INITIALIZATION ===');
-  debugLog('Session:', {
+  debugLogAuth('=== AUTH INITIALIZATION ===');
+  debugLogAuth('Session:', {
     isLoggedIn: sessionStorage.getItem('isLoggedIn'),
     userRole: sessionStorage.getItem('userRole'),
-    username: sessionStorage.getItem('username')
+    username: sessionStorage.getItem('username'),
+    loginTime: sessionStorage.getItem('loginTime')
   });
 
-  // Session validation
+  // ✅ Validate session immediately (not just every 5 min)
+  if (sessionStorage.getItem('isLoggedIn') === 'true' && !validateSession()) {
+    debugLogAuth('Session expired on init, clearing...');
+    clearUserSession();
+    alert('Sesi Anda telah berakhir. Silakan login kembali.');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  // Periodic session validation (every 5 minutes)
   setInterval(function () {
     if (sessionStorage.getItem('isLoggedIn') === 'true' && !validateSession()) {
       alert('Sesi Anda telah berakhir. Silakan login kembali.');
+      clearUserSession();
       window.location.href = 'login.html';
     }
   }, 5 * 60 * 1000);
 
-  debugLog('Auth initialized');
+  // Cross-tab sync
+  setupCrossTabSync();
+
+  debugLogAuth('Auth initialized');
 }
 
 // Export functions
@@ -219,6 +315,6 @@ window.authDebug = {
   },
   getAllowedPages: function () {
     var role = normalizeRole(sessionStorage.getItem('userRole'));
-    return PERMISSIONS[role] || [];
+    return (typeof PERMISSIONS !== 'undefined' && PERMISSIONS[role]) || [];
   }
 };
