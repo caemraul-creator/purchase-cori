@@ -960,6 +960,50 @@ window.ROLE_NAMES = ROLE_NAMES;
     rejected: ['DoneBy', 'DoneDate', 'Price', 'Nominal', 'LastBuyingDate', 'CreatedAt', 'ApprovedBy', 'ApprovedDate', 'OrderBy']
   };
 
+  // FIX v4.1.5: Urutan kolom EKSPLISIT mengikuti spreadsheet asli.
+  // Ini memastikan tampilan tabel selalu sama urutannya dengan spreadsheet,
+  // tidak tergantung urutan Object.keys() yang bisa beda antar browser.
+  var COLUMN_ORDER = [
+    'ID',
+    'SubmissionDate',
+    'Department',
+    'Office',
+    'Items',
+    'PartOf',
+    'Description',
+    'Qty',
+    'Unit',
+    'Price',
+    'Nominal',
+    'LastBuyingDate',
+    'OrderDate',
+    'Priority',
+    'OrderBy',
+    'Requester',
+    'Status',
+    'CreatedAt',
+    'ApprovedBy',
+    'ApprovedDate',
+    'RejectedBy',
+    'RejectedDate',
+    'RejectedReason',
+    'DoneBy',
+    'DoneDate'
+  ];
+
+  // Helper: urutkan array headers sesuai COLUMN_ORDER
+  function _sortHeadersByColumnOrder(headers) {
+    return headers.slice().sort(function (a, b) {
+      var ia = COLUMN_ORDER.indexOf(a);
+      var ib = COLUMN_ORDER.indexOf(b);
+      // Kolom yang tidak ada di COLUMN_ORDER → di akhir, urut abjad
+      if (ia === -1 && ib === -1) return a < b ? -1 : (a > b ? 1 : 0);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }
+
   var NUMBER_COLUMNS = ['Qty'];
   var CURRENCY_COLUMNS = ['Price', 'Nominal'];
   var DATE_COLUMNS = ['LastBuyingDate', 'OrderDate'];
@@ -1146,7 +1190,7 @@ window.ROLE_NAMES = ROLE_NAMES;
       state.allData = (data || []).filter(function (d) { return d.Status === 'pending'; });
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
-        ? Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.approval.indexOf(h) === -1; })
+        ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.approval.indexOf(h) === -1; }))
         : [];
       state.currentPage = 1;
       renderTable(); renderPagination();
@@ -1158,7 +1202,7 @@ window.ROLE_NAMES = ROLE_NAMES;
       state.allData = (data || []).filter(function (d) { return d.Status === 'approved'; });
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
-        ? Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.done.indexOf(h) === -1; })
+        ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.done.indexOf(h) === -1; }))
         : [];
       state.currentPage = 1;
       renderTable(); renderPagination();
@@ -1171,7 +1215,7 @@ window.ROLE_NAMES = ROLE_NAMES;
       state.allData = data || [];
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
-        ? Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.rekap.indexOf(h) === -1; })
+        ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.rekap.indexOf(h) === -1; }))
         : [];
       state.currentPage = 1;
       renderTable(); renderPagination();
@@ -1183,7 +1227,7 @@ window.ROLE_NAMES = ROLE_NAMES;
       state.allData = data || [];
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
-        ? Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.rejected.indexOf(h) === -1; })
+        ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.rejected.indexOf(h) === -1; }))
         : [];
       state.currentPage = 1;
       renderTable(); renderPagination();
