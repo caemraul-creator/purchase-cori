@@ -26,7 +26,7 @@
 // 1. CONFIG
 // =====================================================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwQ8BY0VnN3EIyX5Kp-06wDWLQSllyJ8eEwHJpWzm1YohR70rTg7x7caVW9XJNOwJFKMg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw3lWUjVJTMwN6rToovwtcUx0OXaeWlRtR7RRjPBJfV2Ay5_xXzUyP449FI-7-MCUfx9w/exec";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBY6B_AMQjeWCfzQiVPtQCLTlTz3ShInwo",
@@ -412,7 +412,7 @@ function confirmDialog(opts) {
       '<input id="confirmInput" type="' + (inputConfig.type || 'text') + '" placeholder="' + _escapeHtml(inputConfig.placeholder || '') + '" style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;">' +
       '<div id="confirmInputError" style="color:#dc2626;font-size:11px;margin-top:4px;min-height:14px;"></div></div>';
   }
-  modal.innerHTML = '<div class="modal-content" style="max-width:480px;"><div class="modal-header"><h3 style="margin:0;font-size:1.2rem;">' + _escapeHtml(title) + '</h3><button class="modal-close" onclick="_cancelConfirm()">×</button></div><div style="padding:8px 0;font-size:14px;color:#374151;line-height:1.6;">' + (message.indexOf('<') === 0 ? message : _escapeHtml(message)) + '</div>' + inputHtml + '<div class="form-actions" style="margin-top:16px;justify-content:flex-end;"><button class="btn-secondary" onclick="_cancelConfirm()">' + _escapeHtml(cancelText) + '</button><button class="' + btnClass + '" id="confirmOkBtn">' + _escapeHtml(confirmText) + '</button></div></div>';
+  modal.innerHTML = '<div class="modal-content" style="max-width:480px;"><div class="modal-header"><h3 style="margin:0;font-size:1.2rem;">' + _escapeHtml(title) + '</h3><button class="modal-close" onclick="_cancelConfirm()">×</button></div><div style="padding:8px 0;font-size:14px;color:#374151;line-height:1.6;">' + (/<[a-z/][\s\S]*>/i.test(message) ? message : _escapeHtml(message)) + '</div>' + inputHtml + '<div class="form-actions" style="margin-top:16px;justify-content:flex-end;"><button class="btn-secondary" onclick="_cancelConfirm()">' + _escapeHtml(cancelText) + '</button><button class="' + btnClass + '" id="confirmOkBtn">' + _escapeHtml(confirmText) + '</button></div></div>';
   document.body.appendChild(modal);
   modal.addEventListener('click', function (e) { if (e.target === modal) _cancelConfirm(); });
   function _close() { modal.remove(); }
@@ -1194,12 +1194,34 @@ window.ROLE_NAMES = ROLE_NAMES;
   // ACTIONS (Approval + Done)
   // =====================================================
 
+  // FIX v4.1.4: Helper — buat deskripsi item untuk dialog
+  // Tampilkan ID + Nama Barang + Qty + Department
+  function _itemDesc(data) {
+    if (!data) return '';
+    var item = _escapeHtml(data.Items || data.ItemName || '-');
+    var qty = _escapeHtml(data.Qty || '');
+    var unit = _escapeHtml(data.Unit || '');
+    var dept = _escapeHtml(data.Department || '');
+    var office = _escapeHtml(data.Office || '');
+    var html = '<div style="margin-top:8px;padding:10px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">';
+    html += '<div style="font-weight:700;font-size:15px;color:#111827;">' + item + '</div>';
+    html += '<div style="font-size:12px;color:#6b7280;margin-top:4px;">';
+    html += 'ID: <b>' + _escapeHtml(data.ID || '') + '</b>';
+    if (qty) html += ' · Qty: <b>' + qty + '</b>' + (unit ? ' ' + unit : '');
+    if (dept) html += ' · ' + dept;
+    if (office) html += ' (' + office + ')';
+    html += '</div>';
+    html += '</div>';
+    return html;
+  }
+
   // Approval: Approve
   window.approve = function (id) {
     var name = sessionStorage.getItem('username') || 'User';
+    var data = state.allData.find(function (d) { return d.ID === id; });
     confirmDialog({
       title: 'Konfirmasi Approve',
-      message: 'Approve request <strong>#' + _escapeHtml(id) + '</strong>?',
+      message: 'Setujui permintaan pembelian ini?' + _itemDesc(data),
       confirmText: '✅ Approve',
       onConfirm: function () {
         var fd = new FormData();
@@ -1213,9 +1235,10 @@ window.ROLE_NAMES = ROLE_NAMES;
   // Approval: Reject (modal dengan alasan)
   window.reject = function (id) {
     var name = sessionStorage.getItem('username') || 'User';
+    var data = state.allData.find(function (d) { return d.ID === id; });
     confirmDialog({
       title: 'Konfirmasi Reject',
-      message: 'Reject request <strong>#' + _escapeHtml(id) + '</strong>?',
+      message: 'Tolak permintaan pembelian ini?' + _itemDesc(data),
       confirmText: '❌ Reject',
       type: 'danger',
       input: {
@@ -1243,7 +1266,7 @@ window.ROLE_NAMES = ROLE_NAMES;
     if (!data) { showToast('Data tidak ditemukan', 'error'); return; }
     confirmDialog({
       title: 'Tandai Selesai',
-      message: 'Pilih aksi untuk request <strong>#' + _escapeHtml(id) + '</strong> (Qty: ' + _escapeHtml(data.Qty) + '):',
+      message: 'Pilih aksi untuk permintaan ini:' + _itemDesc(data),
       confirmText: '✅ Completed',
       cancelText: '📦 Partial',
       onConfirm: function () { completeAll(id); },
@@ -1254,9 +1277,10 @@ window.ROLE_NAMES = ROLE_NAMES;
   // Done: Complete All
   window.completeAll = function (id) {
     var user = sessionStorage.getItem('username') || 'User';
+    var data = state.allData.find(function (d) { return d.ID === id; });
     confirmDialog({
       title: 'Konfirmasi Completed',
-      message: 'Tandai request <strong>#' + _escapeHtml(id) + '</strong> sebagai <strong>Completed</strong> (semua qty dibeli)?',
+      message: 'Tandai <strong>Completed</strong> (semua qty sudah dibeli)?' + _itemDesc(data),
       confirmText: 'Ya, Completed',
       onConfirm: function () {
         var fd = new FormData();
@@ -1273,11 +1297,11 @@ window.ROLE_NAMES = ROLE_NAMES;
     if (!data) return;
     confirmDialog({
       title: 'Partial Complete',
-      message: 'Masukkan qty yang sudah dibeli untuk request <strong>#' + _escapeHtml(id) + '</strong>:',
+      message: 'Masukkan qty yang sudah dibeli:' + _itemDesc(data),
       confirmText: 'Submit Partial',
       input: {
         label: 'Qty Dibeli',
-        placeholder: 'Masukkan qty (1 - ' + data.Qty + ')',
+        placeholder: 'Masukkan qty (1 - ' + (data.Qty - 1) + ')',
         type: 'number',
         validate: function (val) {
           var n = Number(val);
