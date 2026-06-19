@@ -26,7 +26,7 @@
 // 1. CONFIG
 // =====================================================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbw3lWUjVJTMwN6rToovwtcUx0OXaeWlRtR7RRjPBJfV2Ay5_xXzUyP449FI-7-MCUfx9w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwQ8BY0VnN3EIyX5Kp-06wDWLQSllyJ8eEwHJpWzm1YohR70rTg7x7caVW9XJNOwJFKMg/exec";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBY6B_AMQjeWCfzQiVPtQCLTlTz3ShInwo",
