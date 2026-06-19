@@ -1215,7 +1215,7 @@ window.ROLE_NAMES = ROLE_NAMES;
     }
 
     var html = MENU_DEF
-      .filter(function (m) { return allowedPages.indexOf(m.page) !== -1; })
+      .filter(function (m) { return allowedPages.indexOf(m.id) !== -1; })
       .map(function (m) {
         return '<a href="' + m.page + '" class="menu-item" data-page="' + m.page + '">' +
           '<div class="menu-item-icon">' + m.icon + '</div>' +
