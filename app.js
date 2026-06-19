@@ -1,15 +1,9 @@
 /* ============================================================
-   app.js - v4.1 (CONSOLIDATED + IIFE WRAP)
-   Gabungan: core.js (config+auth+ui-helper+firebase-helper) + app.js (page logic)
-   ------------------------------------------------------------
-   FIX v4.1: Seluruh file dibungkus IIFE agar deklarasi const/let
-   (API_URL, FIREBASE_CONFIG, dll) jadi function-scoped dan TIDAK
-   collide dengan file lama (auth.js / core.js) yang mungkin masih
-   tersisa di server Cloudflare. Ini mencegah error:
-     "Identifier 'API_URL' has already been declared"
-   Semua simbol yang dibutuhkan HTML diekspor via window.* (lihat
-   bagian EXPORTS di bawah).
+   app.js - v4.1.9 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
+
+// Version marker — cek di console browser: APP_VERSION
+window.APP_VERSION = 'v4.1.9';
 
 ;(function () {
 
@@ -1590,6 +1584,27 @@ window.ROLE_NAMES = ROLE_NAMES;
 })();   /* ← End of PART 2 inner IIFE */
 
 })();   /* ← End of outer IIFE wrapper (v4.1 fix) */
+
+/* ============================================================
+   AUTO CACHE-BUSTING (v4.1.9)
+   Cek apakah app.js yang di-load adalah versi terbaru.
+   Jika tidak, force reload dengan cache-busting query string.
+   Ini mengatasi masalah browser cache yang masih pakai versi lama.
+   ============================================================ */
+(function () {
+  var EXPECTED_VERSION = 'v4.1.9';
+  if (window.APP_VERSION !== EXPECTED_VERSION) {
+    console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
+    // Force reload dengan cache-busting
+    var url = window.location.href;
+    var sep = url.indexOf('?') === -1 ? '?' : '&';
+    if (url.indexOf('_cb=') === -1) {
+      window.location.href = url + sep + '_cb=' + Date.now();
+    }
+    return;
+  }
+  console.log('✅ app.js', window.APP_VERSION, 'loaded');
+})();
 
 /* Semua deklarasi kini function-scoped, aman dari collision
    dengan file JS lama (auth.js/core.js) yang tersisa di server. */
