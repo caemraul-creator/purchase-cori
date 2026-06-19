@@ -10,19 +10,16 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()
-  
+
   # Force HTTPS (HSTS) - 1 year + subdomains
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  
-  # Content Security Policy (CSP) - FIXED FOR GOOGLE APPS SCRIPT + FIREBASE
-  # Mengizinkan script dari:
-  #   - Google Apps Script (script.google.com + script.googleusercontent.com)
-  #   - Firebase SDK (gstatic.com)
-  #   - html2pdf CDN (cdnjs.cloudflare.com)
-  #   - Inline scripts (unsafe-inline)
-  # connect-src mengizinkan Firebase Realtime DB (firebaseio.com)
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://script.google.com https://script.googleusercontent.com https://cdn.jsdelivr.net https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://www.gstatic.com https://cdnjs.cloudflare.com https://purchase-request-system-47767-default-rtdb.asia-southeast1.firebasedatabase.app wss://purchase-request-system-47767-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app wss://*.firebasedatabase.app; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
-  
+
+  # Content Security Policy (CSP) - v4.1.3 PERMISSIVE
+  # FIX: CSP lama terlalu ketat, memblokir Firebase SDK, JSONP redirect,
+  # html2pdf, dll. Untuk app internal, pakai CSP permisif yang mengizinkan
+  # semua sumber yang dibutuhkan: Google Apps Script, Firebase, CDNs.
+  Content-Security-Policy: default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: wss:; img-src * 'self' data: blob: https:; font-src * 'self' data: https:; frame-ancestors 'self'
+
   # CORS - Restricted
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, POST, OPTIONS, HEAD
