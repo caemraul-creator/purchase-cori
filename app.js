@@ -1,9 +1,9 @@
 /* ============================================================
-   app.js - v4.2.7 (CONSOLIDATED + IIFE WRAP)
+   app.js - v4.2.8 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
 
 // Version marker — cek di console browser: APP_VERSION
-window.APP_VERSION = 'v4.2.7';
+window.APP_VERSION = 'v4.2.8';
 
 ;(function () {
 
@@ -854,16 +854,33 @@ function startAutoSync(intervalMinutes) {
   }, intervalMinutes * 60 * 1000);
 }
 
-// Add sync button ke .head-actions, .head-bar, atau .header (dashboard)
-// FIX v4.2.7: Tambah .header untuk dashboard + tombol Migrasi
+// Add sync button HANYA di dashboard
+// FIX v4.2.8: Sync & Migrasi hanya muncul di dashboard, tidak di halaman lain
 function addSyncButton() {
-  var ha = document.querySelector('.head-actions') || document.querySelector('.head-bar') || document.querySelector('.header');
+  // Cek apakah ini halaman dashboard (body class atau URL)
+  var body = document.body;
+  var isDashboard = false;
+  if (body && body.classList.contains('theme-dashboard')) {
+    isDashboard = true;
+  } else {
+    var path = window.location.pathname.toLowerCase();
+    var file = path.substring(path.lastIndexOf('/') + 1);
+    if (file === 'dashboard.html' || file === '' || file === 'index.html') {
+      isDashboard = true;
+    }
+  }
+
+  // Kalau bukan dashboard, jangan tambah tombol
+  if (!isDashboard) return;
+
+  var ha = document.querySelector('.header');
   if (!ha) { setTimeout(addSyncButton, 1000); return; }
   if (document.getElementById('syncButton')) return;
 
-  // Wrapper untuk tombol-tombol di pojok kanan
+  // FIX v4.2.8: Pakai position:fixed di pojok kanan atas viewport
+  // supaya tidak tertutup elemen header (yang text-align:center)
   var wrapper = document.createElement('div');
-  wrapper.style.cssText = 'display:flex; gap:8px; align-items:center; position:absolute; top:20px; right:20px; z-index:10;';
+  wrapper.style.cssText = 'display:flex; gap:8px; align-items:center; position:fixed; top:16px; right:16px; z-index:9999; background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.12);';
 
   // Tombol Sync
   var syncBtn = document.createElement('button');
@@ -892,8 +909,8 @@ function addSyncButton() {
 
   wrapper.appendChild(syncBtn);
   wrapper.appendChild(migrasiBtn);
-  ha.style.position = 'relative';
-  ha.appendChild(wrapper);
+  // Append ke body supaya position:fixed benar-benar independen
+  document.body.appendChild(wrapper);
 }
 
 // FIX v4.2.7: Dialog Migrasi Data
@@ -1846,7 +1863,7 @@ window.ROLE_NAMES = ROLE_NAMES;
    Ini mengatasi masalah browser cache yang masih pakai versi lama.
    ============================================================ */
 (function () {
-  var EXPECTED_VERSION = 'v4.2.7';
+  var EXPECTED_VERSION = 'v4.2.8';
   if (window.APP_VERSION !== EXPECTED_VERSION) {
     console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
     // Force reload dengan cache-busting
