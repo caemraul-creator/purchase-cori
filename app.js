@@ -552,8 +552,79 @@ function syncFirebaseWithSheet(sheetName, forceRefresh, silent) {
 }
 
 // JSONP loader (Apps Script compatible)
+// FIX v4.1: Tambah normalisasi data + fetch fallback
 function loadDataFromAPI(callback, sheetName) {
   if (sheetName === undefined) sheetName = '';
+
+  // Coba FETCH dulu (lebih reliable, support error handling)
+  _loadDataViaFetch(sheetName)
+    .then(function (data) {
+      var normalized = _normalizeData(data);
+      debugLog('🌐 API (fetch) loaded:', sheetName || 'main', '→', normalized.length, 'records');
+      callback(normalized);
+    })
+    .catch(function (fetchErr) {
+      debugWarn('Fetch failed, trying JSONP:', fetchErr.message);
+      _loadDataViaJSONP(sheetName, callback);
+    });
+}
+
+// FIX v4.1: Fetch-based loader (fallback untuk JSONP)
+// FIX v4.1.1: GAS SELALU bungkus response dengan callback(...) meski tanpa
+// parameter callback. Jadi kita WAJIB parse text + strip wrapper.
+function _loadDataViaFetch(sheetName) {
+  var url = new URL(API_URL);
+  url.searchParams.set('action', 'read');
+  if (sheetName) url.searchParams.set('sheet', sheetName);
+  url.searchParams.set('_t', Date.now());
+
+  return fetch(url.toString(), { method: 'GET' })
+    .then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(function (text) {
+      // GAS selalu return: callback([...]) atau callback({...})
+      // Strip wrapper callback(...) untuk dapat JSON murni
+      var jsonStr = _extractJsonFromResponse(text);
+      try {
+        return JSON.parse(jsonStr);
+      } catch (e) {
+        debugError('JSON parse failed. Raw response (first 200 chars):', text.substring(0, 200));
+        throw new Error('Invalid JSON response from GAS');
+      }
+    });
+}
+
+// FIX v4.1.1: Extract JSON dari response GAS yang terbungkus callback
+// Gas response format:
+//   callback([{"ID":"PR-001",...}])      → ambil bagian dalam kurung
+//   callback({...})                       → ambil bagian dalam kurung
+//   [{"ID":"PR-001",...}]                 → langsung (JSON murni)
+//   {...}                                 → langsung (JSON murni)
+function _extractJsonFromResponse(text) {
+  if (!text || typeof text !== 'string') return '';
+  var trimmed = text.trim();
+
+  // Cek apakah ada wrapper callback(...)
+  // Pattern: identifier(  ...  )  dengan opsional ; di akhir
+  var match = trimmed.match(/^[a-zA-Z_$][\w$]*\s*\(([\s\S]*)\)\s*;?\s*$/);
+  if (match) {
+    return match[1].trim();
+  }
+
+  // Bisa juga format dengan spasi/newline setelah callback
+  match = trimmed.match(/^[a-zA-Z_$][\w$]*\s*\(([\s\S]*)\)/);
+  if (match) {
+    return match[1].trim();
+  }
+
+  // JSON murni (tidak ada wrapper)
+  return trimmed;
+}
+
+// FIX v4.1: JSONP loader (original method, sebagai fallback)
+function _loadDataViaJSONP(sheetName, callback) {
   var ts = Date.now(), rnd = Math.random().toString(36).substr(2, 9);
   var cbName = 'cb_sync_' + ts + '_' + rnd;
   var resolved = false, tid = null;
@@ -565,13 +636,19 @@ function loadDataFromAPI(callback, sheetName) {
     try {
       if (!data) { callback([]); return; }
       if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { callback([]); return; } }
-      callback(data);
+      var normalized = _normalizeData(data);
+      debugLog('🌐 API (JSONP) loaded:', sheetName || 'main', '→', normalized.length, 'records');
+      callback(normalized);
     } catch (err) { debugError('API data error:', err); callback([]); }
     finally { _cleanup(cbName); }
   };
 
   tid = setTimeout(function () {
-    if (!resolved) { resolved = true; _cleanup(cbName); callback([]); debugWarn('API timeout:', sheetName); }
+    if (!resolved) {
+      resolved = true; _cleanup(cbName);
+      debugWarn('API timeout:', sheetName);
+      callback([]);
+    }
   }, 15000);
 
   try {
@@ -584,9 +661,59 @@ function loadDataFromAPI(callback, sheetName) {
     s.id = 'script-' + cbName;
     s.src = url.toString();
     s.async = true;
-    s.onerror = function () { if (!resolved) { resolved = true; _cleanup(cbName); callback([]); } };
+    s.onerror = function () {
+      if (!resolved) {
+        resolved = true; _cleanup(cbName);
+        debugError('JSONP script error:', sheetName);
+        callback([]);
+      }
+    };
     document.body.appendChild(s);
   } catch (err) { _cleanup(cbName); callback([]); }
+}
+
+// FIX v4.1: Normalisasi data dari berbagai format Apps Script
+// Format 1: [{ID:'PR-001', Status:'pending', ...}, ...]  → langsung pakai
+// Format 2: [['ID','Status',...], ['PR-001','pending',...], ...]  → convert ke objects
+// Format 3: {data: [...]} atau {rows: [...]}  → extract array
+// Format 4: {success: true, data: [...]}  → extract data
+function _normalizeData(data) {
+  if (!data) return [];
+
+  // Format 3/4: object dengan property data/rows
+  if (!Array.isArray(data) && typeof data === 'object') {
+    if (data.data && Array.isArray(data.data)) data = data.data;
+    else if (data.rows && Array.isArray(data.rows)) data = data.rows;
+    else if (data.values && Array.isArray(data.values)) data = data.values;
+    else return [];
+  }
+
+  if (!Array.isArray(data) || data.length === 0) return [];
+
+  // Cek apakah data sudah array of objects (Format 1)
+  if (typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0])) {
+    return data;
+  }
+
+  // Format 2: array of arrays — konversi ke objects
+  if (Array.isArray(data[0])) {
+    var headers = data[0];
+    var result = [];
+    for (var i = 1; i < data.length; i++) {
+      if (!data[i] || data[i].length === 0) continue;
+      var obj = {};
+      for (var j = 0; j < headers.length; j++) {
+        if (headers[j] != null) {
+          obj[headers[j]] = data[i][j] != null ? data[i][j] : '';
+        }
+      }
+      result.push(obj);
+    }
+    debugLog('🔧 Data normalized from 2D array:', data.length - 1, '→', result.length, 'records');
+    return result;
+  }
+
+  return data;
 }
 
 function _cleanup(cbName) {
@@ -596,49 +723,66 @@ function _cleanup(cbName) {
 }
 
 // Cache-first load: cache → Firebase → API
+// FIX v4.1: Jika Firebase return data kosong/stale, LANGSUNG fallback ke API
 function loadDataSmart(callback, sheetName, forceRefresh) {
   if (forceRefresh === undefined) forceRefresh = false;
   if (sheetName === undefined) sheetName = '';
   var cacheKey = sheetName || 'main';
   var firebasePath = 'purchase_data/' + cacheKey;
+  var called = false;
+  function done(data) { if (!called) { called = true; if (callback) callback(data); } }
 
   if (forceRefresh) {
-    syncFirebaseWithSheet(sheetName, true, true)
-      .then(function () { return loadFromFirebase(firebasePath); })
-      .then(function (d) {
-        if (d) { setCachedData(cacheKey, d); if (callback) callback(d); }
-        else { var c = getCachedData(cacheKey); if (callback) callback(c || []); }
-      })
-      .catch(function () { var c = getCachedData(cacheKey); if (callback) callback(c || []); });
+    // Force refresh: langsung hit API, skip cache/firebase
+    loadDataFromAPI(function (data) {
+      if (data && data.length > 0) {
+        setCachedData(cacheKey, data);
+        if (USE_FIREBASE && firebaseInitialized) saveToFirebase(firebasePath, data).catch(function(){});
+      }
+      done(data || []);
+    }, sheetName);
     return;
   }
 
-  // 1. Cache lokal
+  // 1. Cache lokal (hanya jika masih fresh < 5 menit)
   var local = getCachedData(cacheKey);
-  if (local) { debugLog('📦 From cache:', cacheKey, local.length, 'records'); if (callback) setTimeout(function () { callback(local); }, 0); return; }
+  if (local && local.length > 0) {
+    debugLog('📦 From cache:', cacheKey, local.length, 'records');
+    setTimeout(function () { done(local); }, 0);
+    return;
+  }
 
-  // 2. Firebase
+  // 2. Firebase (tapi hanya sebagai intermediate, bukan sumber utama)
   if (USE_FIREBASE && firebaseInitialized) {
     loadFromFirebase(firebasePath)
       .then(function (d) {
-        if (d && d.length > 0) { setCachedData(cacheKey, d); if (callback) callback(d); return; }
-        return syncFirebaseWithSheet(sheetName, false, true).then(function () { return loadFromFirebase(firebasePath); });
+        if (d && d.length > 0) {
+          setCachedData(cacheKey, d);
+          done(d);
+        } else {
+          // FIX: Firebase kosong → langsung ke API
+          debugLog('🔄 Firebase empty for', cacheKey, '→ fetching API');
+          loadDataFromAPI(function (data) {
+            if (data && data.length > 0) {
+              setCachedData(cacheKey, data);
+              saveToFirebase(firebasePath, data).catch(function(){});
+            }
+            done(data || []);
+          }, sheetName);
+        }
       })
-      .then(function (d) {
-        if (d) { setCachedData(cacheKey, d); if (callback) callback(d); }
-        else if (callback) callback([]);
-      })
-      .catch(function () {
-        // Fallback ke API langsung
+      .catch(function (err) {
+        debugWarn('Firebase error:', err.message, '→ fetching API');
         loadDataFromAPI(function (data) {
-          if (data && data.length > 0) { setCachedData(cacheKey, data); saveToFirebase(firebasePath, data); }
-          if (callback) callback(data || []);
+          if (data && data.length > 0) setCachedData(cacheKey, data);
+          done(data || []);
         }, sheetName);
       });
   } else {
+    // 3. Tanpa Firebase → langsung API
     loadDataFromAPI(function (data) {
       if (data && data.length > 0) setCachedData(cacheKey, data);
-      if (callback) callback(data || []);
+      done(data || []);
     }, sheetName);
   }
 }
@@ -1059,6 +1203,7 @@ window.ROLE_NAMES = ROLE_NAMES;
       confirmText: '✅ Approve',
       onConfirm: function () {
         var fd = new FormData();
+        fd.append('action', 'approve');
         fd.append('ID', id); fd.append('Status', 'approved'); fd.append('ApprovedBy', name);
         submitAction(fd, 'Request berhasil di-approve');
       }
@@ -1084,6 +1229,7 @@ window.ROLE_NAMES = ROLE_NAMES;
       },
       onConfirm: function (reason) {
         var fd = new FormData();
+        fd.append('action', 'reject');
         fd.append('ID', id); fd.append('Status', 'rejected');
         fd.append('RejectedBy', name); fd.append('RejectedReason', reason);
         submitAction(fd, 'Request berhasil di-reject');
@@ -1114,6 +1260,7 @@ window.ROLE_NAMES = ROLE_NAMES;
       confirmText: 'Ya, Completed',
       onConfirm: function () {
         var fd = new FormData();
+        fd.append('action', 'done');
         fd.append('ID', id); fd.append('Status', 'done'); fd.append('DoneBy', user);
         submitAction(fd, 'Request selesai (Completed)');
       }
@@ -1144,6 +1291,7 @@ window.ROLE_NAMES = ROLE_NAMES;
         var boughtQty = Number(boughtQtyStr);
         var user = sessionStorage.getItem('username') || 'User';
         var fd = new FormData();
+        fd.append('action', 'partialDone');
         fd.append('ID', id); fd.append('Status', 'partial');
         fd.append('BoughtQty', boughtQty); fd.append('RemainingQty', data.Qty - boughtQty);
         fd.append('DoneBy', user);
@@ -1153,11 +1301,23 @@ window.ROLE_NAMES = ROLE_NAMES;
   };
 
   // Generic submit + optimistic update
+  // FIX v4.1.2: GAS return plain text 'Data berhasil disimpan' atau 'Error: ...'
+  // Jadi kita cek response TEXT, bukan res.ok (yang selalu true karena HTTP 200)
   async function submitAction(fd, successMsg) {
     try {
       showToast('Memproses...', 'warning');
-      var res = await fetch(API_URL, { method: 'POST', body: fd });
-      if (!res.ok) throw new Error('Gagal update');
+      var res = await fetch(API_URL, { method: 'POST', body: fd, redirect: 'follow' });
+      var responseText = await res.text();
+      debugLog('POST response:', responseText);
+
+      // FIX: GAS return 'Error: ...' dengan HTTP 200 — cek text-nya
+      if (responseText && responseText.indexOf('Error') === 0) {
+        throw new Error(responseText);
+      }
+      if (!res.ok && !responseText) {
+        throw new Error('Gagal update (HTTP ' + res.status + ')');
+      }
+
       showToast(successMsg, 'success');
 
       // Clear all related caches
@@ -1174,6 +1334,8 @@ window.ROLE_NAMES = ROLE_NAMES;
     } catch (err) {
       debugError('Action error:', err);
       showToast('Gagal: ' + err.message, 'error');
+      // Reload data to revert optimistic update
+      setTimeout(function () { reloadPageData(); }, 500);
     }
   }
 
@@ -1252,15 +1414,22 @@ window.ROLE_NAMES = ROLE_NAMES;
   function loadDashboardStats() {
     statsData = { pending: 0, approved: 0, done: 0, rejected: 0 };
     seenIds = {};
+    debugLog('📊 Loading dashboard stats...');
     loadMultipleSheets(['', 'done', 'rejected'], function (results) {
+      debugLog('📊 Stats data received:', {
+        main: (results[''] || []).length,
+        done: (results['done'] || []).length,
+        rejected: (results['rejected'] || []).length
+      });
       (results[''] || []).forEach(function (item) {
         if (item && item.ID && !seenIds[item.ID]) {
-          var s = (item.Status || '').toLowerCase().trim();
+          var s = (item.Status || '').toString().toLowerCase().trim();
           if (statsData.hasOwnProperty(s)) { statsData[s]++; seenIds[item.ID] = true; }
         }
       });
       (results['done'] || []).forEach(function (item) { if (item && item.ID) statsData.done++; });
       (results['rejected'] || []).forEach(function (item) { if (item && item.ID) statsData.rejected++; });
+      debugLog('📊 Final stats:', statsData);
       _setText('statPending', statsData.pending);
       _setText('statApproved', statsData.approved);
       _setText('statDone', statsData.done);
