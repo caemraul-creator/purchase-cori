@@ -21,7 +21,7 @@
   #   - html2pdf CDN (cdnjs.cloudflare.com)
   #   - Inline scripts (unsafe-inline)
   # connect-src mengizinkan Firebase Realtime DB (firebaseio.com)
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://script.google.com https://script.googleusercontent.com https://cdn.jsdelivr.net https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://www.gstatic.com https://purchase-request-system-47767-default-rtdb.asia-southeast1.firebasedatabase.app wss://purchase-request-system-47767-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app wss://*.firebasedatabase.app; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://script.google.com https://script.googleusercontent.com https://cdn.jsdelivr.net https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://www.gstatic.com https://cdnjs.cloudflare.com https://purchase-request-system-47767-default-rtdb.asia-southeast1.firebasedatabase.app wss://purchase-request-system-47767-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app wss://*.firebasedatabase.app; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
   
   # CORS - Restricted
   Access-Control-Allow-Origin: *

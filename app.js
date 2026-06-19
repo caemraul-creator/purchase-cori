@@ -1,7 +1,17 @@
 /* ============================================================
-   app.js - v4.0 (CONSOLIDATED)
+   app.js - v4.1 (CONSOLIDATED + IIFE WRAP)
    Gabungan: core.js (config+auth+ui-helper+firebase-helper) + app.js (page logic)
+   ------------------------------------------------------------
+   FIX v4.1: Seluruh file dibungkus IIFE agar deklarasi const/let
+   (API_URL, FIREBASE_CONFIG, dll) jadi function-scoped dan TIDAK
+   collide dengan file lama (auth.js / core.js) yang mungkin masih
+   tersisa di server Cloudflare. Ini mencegah error:
+     "Identifier 'API_URL' has already been declared"
+   Semua simbol yang dibutuhkan HTML diekspor via window.* (lihat
+   bagian EXPORTS di bawah).
    ============================================================ */
+
+;(function () {
 
 /* ============================================================
    PART 1: core.js (Config + Auth + UI Helpers + Firebase)
@@ -1299,4 +1309,9 @@ window.ROLE_NAMES = ROLE_NAMES;
     });
   });
 
-})();
+})();   /* ← End of PART 2 inner IIFE */
+
+})();   /* ← End of outer IIFE wrapper (v4.1 fix) */
+
+/* Semua deklarasi kini function-scoped, aman dari collision
+   dengan file JS lama (auth.js/core.js) yang tersisa di server. */
