@@ -1,46 +1,56 @@
 # Cara Deploy ke Cloudflare Pages
 
-## Langkah 1 — Upload ke GitHub
-1. Buat repo baru di GitHub (atau pakai repo lama)
-2. Upload SEMUA file di folder ini ke root repo:
-   - app.js, style.css, _headers
-   - login.html, dashboard.html, approval.html, done.html
-   - rekap.html, rejected.html, print.html
-3. Commit & push
+## Yang Diperbaiki (v4.1)
 
-## Langkah 2 — Hapus File Lama di Repo (PENTING!)
-Hapus file-file lama yang SUDAH TIDAK DIPAKAI agar error hilang:
-```
-auth.js
-core.js
-config.js
-ui-helper.js
-firebase-helper.js
-style-mobile.css
-css.css
-themes.css
-index.html          ← jika ada, ini sumber error style-mobile.css
-```
+### 1. Menu Dashboard Kosong → FIX
+Function renderMenu() filter pakai m.page (nama file) tapi PERMISSIONS
+pakai m.id (ID logis). Diubah ke m.id agar menu muncul.
 
-## Langkah 3 — Deploy di Cloudflare Pages
-1. Login Cloudflare → Pages → Create a project → Connect to Git
-2. Pilih repo Anda
-3. Framework preset: **None** (static site)
-4. Build command: (kosongkan)
-5. Build output directory: **/** (root)
-6. Deploy!
+### 2. Menu "New Request" Tidak Connect → FIX
+File index.html TIDAK ADA di upload sebelumnya. Sekarang sudah dibuat
+lengkap dengan form permintaan pembelian (Department, Office, Items,
+Qty, Unit, Price, dll + auto-calculate Nominal).
 
-## Langkah 4 — Hard Refresh
-Setelah deploy, buka situs Anda lalu tekan **Ctrl+Shift+R** (atau Cmd+Shift+R di Mac)
-untuk menghapus cache browser dari file JS lama.
+### 3. Kolom Spreadsheet Tidak Cocok → FIX
+HIDDEN_COLUMNS & DISPLAY_NAMES disesuaikan dengan kolom spreadsheet
+asli: Items, Description, Department, Office, PartOf, Priority, OrderBy.
+
+### 4. Error Console (dari versi sebelumnya):
+- app.js IIFE wrap → cegah "API_URL already declared"
+- _headers CSP → cegah blok html2pdf
+- meta mobile-web-app-capable → ganti apple-mobile deprecated
 
 ---
 
-## Yang Diperbaiki (v4.1)
+## Langkah Deploy
 
-| Error | Fix |
-|---|---|
-| `style-mobile.css` MIME error | Hapus index.html lama (Langkah 2) |
-| `API_URL` already declared | app.js dibungkus IIFE — aman dari collision |
-| CSP blok html2pdf map | _headers: connect-src + cdnjs.cloudflare.com |
-| apple-mobile-web-app-capable deprecated | Semua HTML: meta mobile-web-app-capable |
+### 1. Upload SEMUA file ke GitHub (timpa yang lama):
+  app.js, style.css, _headers
+  index.html (BARU!), login.html, dashboard.html
+  approval.html, done.html, rekap.html, rejected.html, print.html
+
+### 2. Hapus file lama dari repo:
+  auth.js, core.js, config.js, ui-helper.js, firebase-helper.js
+  style-mobile.css, css.css, themes.css
+
+### 3. Deploy di Cloudflare Pages:
+  Framework preset: None (static site)
+  Build command: (kosong)
+  Build output: / (root)
+
+### 4. Hard refresh: Ctrl+Shift+R
+
+---
+
+## Akun Login (dari spreadsheet Users):
+  kukuh  / admin123   → staff_c (6 menu)
+  yusuf  / 112233     → staff_c (6 menu)
+  parni  / 112233     → staff_c (6 menu)
+  viewer / viewer123  → viewer (2 menu)
+  staffa / staffa123  → staff_a (4 menu)
+  staffb / staffb123  → staff_b (5 menu)
+
+## Data di Spreadsheet:
+  Sheet1: 218 pending + 1 approved (active requests)
+  Done: 277 completed
+  Rejected: 5 rejected

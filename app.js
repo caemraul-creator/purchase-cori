@@ -805,11 +805,15 @@ window.ROLE_NAMES = ROLE_NAMES;
   // SHARED STATE
   // =====================================================
 
+  // FIX v4.1: Sesuaikan dengan kolom spreadsheet asli:
+  // ID, SubmissionDate, Department, Office, Items, PartOf, Description, Qty, Unit, Price,
+  // Nominal, LastBuyingDate, OrderDate, Priority, OrderBy, Requester, Status, CreatedAt,
+  // ApprovedBy, ApprovedDate, RejectedBy, RejectedDate, RejectedReason, DoneBy, DoneDate
   var HIDDEN_COLUMNS = {
-    approval: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason'],
-    done: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason'],
-    rekap: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'Requester'],
-    rejected: ['DoneBy', 'DoneDate', 'Price', 'Nominal', 'LastBuyingDate', 'Aksi', 'CreatedAt', 'ApprovedBy', 'ApprovedDate']
+    approval: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy'],
+    done: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy'],
+    rekap: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'Requester', 'OrderBy', 'Status'],
+    rejected: ['DoneBy', 'DoneDate', 'Price', 'Nominal', 'LastBuyingDate', 'CreatedAt', 'ApprovedBy', 'ApprovedDate', 'OrderBy']
   };
 
   var NUMBER_COLUMNS = ['Qty'];
@@ -921,10 +925,24 @@ window.ROLE_NAMES = ROLE_NAMES;
     var page = detectPage();
     var hiddenCols = HIDDEN_COLUMNS[page] || [];
 
-    // Header
+    // Header — FIX v4.1: mapping nama kolom spreadsheet ke display name
+    var DISPLAY_NAMES = {
+      'SubmissionDate': 'Submission Date',
+      'LastBuyingDate': 'Last Buying',
+      'OrderDate': 'Order Date',
+      'Items': 'Item Name',
+      'PartOf': 'Part Of',
+      'Description': 'Description',
+      'ApprovedBy': 'Approved By',
+      'ApprovedDate': 'Approved Date',
+      'DoneBy': 'Done By',
+      'DoneDate': 'Done Date',
+      'RejectedBy': 'Rejected By',
+      'RejectedDate': 'Rejected Date',
+      'RejectedReason': 'Reason'
+    };
     var headerHtml = state.headers.map(function (h) {
-      var displayName = h;
-      if (h === 'SubmissionDate') displayName = 'Submission Date';
+      var displayName = DISPLAY_NAMES[h] || h;
       var html = '<th>' + _escapeHtml(displayName) + '</th>';
       if (h === 'ID') html += '<th>Aksi</th>';
       return html;
@@ -1205,15 +1223,18 @@ window.ROLE_NAMES = ROLE_NAMES;
     debugLog('📋 Allowed pages for', role, ':', allowedPages);
 
     if (allowedPages.length === 0) {
-      // Fallback berdasarkan role
+      // Fallback berdasarkan role (pakai ID logis, BUKAN nama file)
       debugWarn('⚠️ No permissions found for role:', role, '- using fallback');
-      if (role === 'admin') allowedPages = MENU_DEF.map(function (m) { return m.page; });
-      else if (role === 'staff_a') allowedPages = ['index.html', 'rekap.html', 'rejected.html', 'print.html'];
-      else if (role === 'staff_b') allowedPages = ['index.html', 'approval.html', 'done.html', 'rekap.html', 'print.html'];
-      else if (role === 'staff_c') allowedPages = ['index.html', 'approval.html', 'done.html', 'rekap.html', 'rejected.html', 'print.html'];
-      else allowedPages = ['rekap.html', 'print.html'];
+      if (role === 'admin') allowedPages = MENU_DEF.map(function (m) { return m.id; });
+      else if (role === 'staff_a') allowedPages = ['request', 'rekap', 'rejected', 'print'];
+      else if (role === 'staff_b') allowedPages = ['request', 'approval', 'done', 'rekap', 'print'];
+      else if (role === 'staff_c') allowedPages = ['request', 'approval', 'done', 'rekap', 'rejected', 'print'];
+      else allowedPages = ['rekap', 'print'];
     }
 
+    // FIX v4.1: filter pakai m.id (logis: 'request','approval',...)
+    // BUKAN m.page (nama file: 'index.html','approval.html',...)
+    // agar cocok dengan PERMISSIONS yang juga pakai ID logis.
     var html = MENU_DEF
       .filter(function (m) { return allowedPages.indexOf(m.id) !== -1; })
       .map(function (m) {
