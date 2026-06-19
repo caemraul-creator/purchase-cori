@@ -222,6 +222,53 @@ tbody tr:hover {
   white-space: nowrap;
 }
 
+/* ============================================================
+   FIX v4.2.9: Table column width — compact & consistent
+   Setiap kolom punya max-width supaya tidak ada yang terlalu panjang.
+   Long text columns (Description, Items) di-truncate dengan ellipsis.
+   ============================================================ */
+
+/* Default td: compact padding + truncate */
+tbody td {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+/* Kolom ID — pendek */
+tbody td:nth-child(1) { max-width: 130px; }
+
+/* Kolom tanggal — pendek */
+tbody td.text-center { max-width: 140px; }
+
+/* Kolom angka — pendek */
+tbody td.text-right { max-width: 130px; }
+
+/* Header ikut compact */
+thead th {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 10px;
+  font-size: 12px;
+}
+
+/* Tooltip untuk text yang ter-truncate */
+tbody td[title]:hover {
+  cursor: help;
+  background: #f3f4f6;
+}
+
+/* Table layout fixed supaya width konsisten */
+table {
+  table-layout: auto;
+  width: 100%;
+}
+
 .text-right {
   text-align: right;
 }

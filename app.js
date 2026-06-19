@@ -1,9 +1,9 @@
 /* ============================================================
-   app.js - v4.2.8 (CONSOLIDATED + IIFE WRAP)
+   app.js - v4.2.9 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
 
 // Version marker — cek di console browser: APP_VERSION
-window.APP_VERSION = 'v4.2.8';
+window.APP_VERSION = 'v4.2.9';
 
 ;(function () {
 
@@ -877,10 +877,9 @@ function addSyncButton() {
   if (!ha) { setTimeout(addSyncButton, 1000); return; }
   if (document.getElementById('syncButton')) return;
 
-  // FIX v4.2.8: Pakai position:fixed di pojok kanan atas viewport
-  // supaya tidak tertutup elemen header (yang text-align:center)
+  // FIX v4.2.9: Pindah ke kanan bawah viewport (lebih estetis)
   var wrapper = document.createElement('div');
-  wrapper.style.cssText = 'display:flex; gap:8px; align-items:center; position:fixed; top:16px; right:16px; z-index:9999; background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.12);';
+  wrapper.style.cssText = 'display:flex; gap:8px; align-items:center; position:fixed; bottom:20px; right:20px; z-index:9999; background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.15);';
 
   // Tombol Sync
   var syncBtn = document.createElement('button');
@@ -1362,7 +1361,10 @@ window.ROLE_NAMES = ROLE_NAMES;
       var cellsHtml = state.headers.map(function (h) {
         var f = formatCell(h, r[h] != null ? r[h] : '');
         var safeV = typeof f.v === 'string' ? _escapeHtml(f.v) : f.v;
-        var cell = '<td class="' + f.cls + '">' + safeV + '</td>';
+        // FIX v4.2.9: Tambah title attribute untuk tooltip (text panjang)
+        var rawVal = r[h] != null ? String(r[h]) : '';
+        var titleAttr = (rawVal.length > 25) ? ' title="' + _escapeHtml(rawVal) + '"' : '';
+        var cell = '<td class="' + f.cls + '"' + titleAttr + '>' + safeV + '</td>';
 
         if (h === 'Status') {
           var status = String(f.v).toLowerCase();
@@ -1863,7 +1865,7 @@ window.ROLE_NAMES = ROLE_NAMES;
    Ini mengatasi masalah browser cache yang masih pakai versi lama.
    ============================================================ */
 (function () {
-  var EXPECTED_VERSION = 'v4.2.8';
+  var EXPECTED_VERSION = 'v4.2.9';
   if (window.APP_VERSION !== EXPECTED_VERSION) {
     console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
     // Force reload dengan cache-busting
