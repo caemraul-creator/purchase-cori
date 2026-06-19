@@ -1,9 +1,9 @@
 /* ============================================================
-   app.js - v4.2.4 (CONSOLIDATED + IIFE WRAP)
+   app.js - v4.2.5 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
 
 // Version marker — cek di console browser: APP_VERSION
-window.APP_VERSION = 'v4.2.4';
+window.APP_VERSION = 'v4.2.5';
 
 ;(function () {
 
@@ -20,7 +20,7 @@ window.APP_VERSION = 'v4.2.4';
 // 1. CONFIG
 // =====================================================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzb3Fr-Iqq8-IO1y9Cl8nswp3WoTdPx0rnz1vRhjSKeJ5F-8DOnmjM2BGn0ZAwuStGLmQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw3lWUjVJTMwN6rToovwtcUx0OXaeWlRtR7RRjPBJfV2Ay5_xXzUyP449FI-7-MCUfx9w/exec";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBY6B_AMQjeWCfzQiVPtQCLTlTz3ShInwo",
@@ -1682,7 +1682,7 @@ window.ROLE_NAMES = ROLE_NAMES;
    Ini mengatasi masalah browser cache yang masih pakai versi lama.
    ============================================================ */
 (function () {
-  var EXPECTED_VERSION = 'v4.2.4';
+  var EXPECTED_VERSION = 'v4.2.5';
   if (window.APP_VERSION !== EXPECTED_VERSION) {
     console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
     // Force reload dengan cache-busting
