@@ -1,9 +1,9 @@
 /* ============================================================
-   app.js - v4.2.5 (CONSOLIDATED + IIFE WRAP)
+   app.js - v4.2.6 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
 
 // Version marker — cek di console browser: APP_VERSION
-window.APP_VERSION = 'v4.2.5';
+window.APP_VERSION = 'v4.2.6';
 
 ;(function () {
 
@@ -20,7 +20,7 @@ window.APP_VERSION = 'v4.2.5';
 // 1. CONFIG
 // =====================================================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbx9EJeT42ZsXw1giLI6kSKQmg_gMd9QFyJ2JQNre5apQuJ8YejMgo1R07EBTjsCTO1rgw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw3lWUjVJTMwN6rToovwtcUx0OXaeWlRtR7RRjPBJfV2Ay5_xXzUyP449FI-7-MCUfx9w/exec";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBY6B_AMQjeWCfzQiVPtQCLTlTz3ShInwo",
@@ -1044,7 +1044,7 @@ window.ROLE_NAMES = ROLE_NAMES;
     filteredData: [],
     headers: [],
     currentPage: 1,
-    pageSize: 100,
+    pageSize: 200,
     renderToken: { cancelled: false }
   };
 
@@ -1233,10 +1233,20 @@ window.ROLE_NAMES = ROLE_NAMES;
   // DATA LOADERS
   // =====================================================
 
+  // FIX v4.2.6: Sort data by tanggal terbaru (SubmissionDate / CreatedAt / DoneDate)
+  // supaya data paling baru selalu di atas tabel
+  function _sortByDateDesc(arr) {
+    return arr.slice().sort(function (a, b) {
+      var da = new Date(a.SubmissionDate || a.CreatedAt || a.DoneDate || a.RejectedDate || 0).getTime();
+      var db = new Date(b.SubmissionDate || b.CreatedAt || b.DoneDate || b.RejectedDate || 0).getTime();
+      return db - da; // descending (terbaru di atas)
+    });
+  }
+
   function loadApprovalData(forceRefresh) {
     if (forceRefresh) clearCache('main');
     loadDataOptimizedForce(function (data) {
-      state.allData = (data || []).filter(function (d) { return d.Status === 'pending'; });
+      state.allData = _sortByDateDesc((data || []).filter(function (d) { return d.Status === 'pending'; }));
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
         ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.approval.indexOf(h) === -1; }))
@@ -1249,7 +1259,7 @@ window.ROLE_NAMES = ROLE_NAMES;
   function loadDoneData(forceRefresh) {
     if (forceRefresh) clearCache('main');
     loadDataOptimizedForce(function (data) {
-      state.allData = (data || []).filter(function (d) { return d.Status === 'approved'; });
+      state.allData = _sortByDateDesc((data || []).filter(function (d) { return d.Status === 'approved'; }));
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
         ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.done.indexOf(h) === -1; }))
@@ -1262,7 +1272,7 @@ window.ROLE_NAMES = ROLE_NAMES;
   function loadRekapData(forceRefresh) {
     if (forceRefresh) clearCache('done');
     loadDataOptimizedForce(function (data) {
-      state.allData = data || [];
+      state.allData = _sortByDateDesc(data || []);
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
         ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.rekap.indexOf(h) === -1; }))
@@ -1275,7 +1285,7 @@ window.ROLE_NAMES = ROLE_NAMES;
   function loadRejectedData(forceRefresh) {
     if (forceRefresh) clearCache('rejected');
     loadDataOptimizedForce(function (data) {
-      state.allData = data || [];
+      state.allData = _sortByDateDesc(data || []);
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
         ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.rejected.indexOf(h) === -1; }))
@@ -1682,7 +1692,7 @@ window.ROLE_NAMES = ROLE_NAMES;
    Ini mengatasi masalah browser cache yang masih pakai versi lama.
    ============================================================ */
 (function () {
-  var EXPECTED_VERSION = 'v4.2.5';
+  var EXPECTED_VERSION = 'v4.2.6';
   if (window.APP_VERSION !== EXPECTED_VERSION) {
     console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
     // Force reload dengan cache-busting
