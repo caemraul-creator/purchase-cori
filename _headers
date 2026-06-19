@@ -58,14 +58,15 @@
 
 
 # ===== JAVASCRIPT FILES =====
+# FIX v4.1.6: Hapus "immutable" + TTL pendek supaya update langsung efektif
 /*.js
-  Cache-Control: public, max-age=604800, immutable
+  Cache-Control: no-cache, must-revalidate
   X-Content-Type-Options: nosniff
 
 
 # ===== CSS FILES =====
 /*.css
-  Cache-Control: public, max-age=604800, immutable
+  Cache-Control: no-cache, must-revalidate
   X-Content-Type-Options: nosniff
 
 

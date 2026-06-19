@@ -933,15 +933,31 @@ window.ROLE_NAMES = ROLE_NAMES;
 (function () {
   'use strict';
 
-  // Detect page dari body class
+  // Detect page dari body class ATAU URL filename
+  // FIX v4.1.8: Tambah deteksi via URL supaya tetap jalan walau body class berubah
   function detectPage() {
     var body = document.body;
-    if (!body) return null;
-    if (body.classList.contains('theme-dashboard')) return 'dashboard';
-    if (body.classList.contains('theme-approval')) return 'approval';
-    if (body.classList.contains('theme-done')) return 'done';
-    if (body.classList.contains('theme-rekap')) return 'rekap';
-    if (body.classList.contains('theme-rejected')) return 'rejected';
+
+    // 1. Cek body class dulu (cara lama)
+    if (body) {
+      if (body.classList.contains('theme-dashboard')) return 'dashboard';
+      if (body.classList.contains('theme-approval')) return 'approval';
+      if (body.classList.contains('theme-done')) return 'done';
+      if (body.classList.contains('theme-rekap')) return 'rekap';
+      if (body.classList.contains('theme-rejected')) return 'rejected';
+    }
+
+    // 2. Fallback: cek URL filename
+    var path = window.location.pathname.toLowerCase();
+    var file = path.substring(path.lastIndexOf('/') + 1);
+    if (file === '' || file === 'index.html') return 'request';
+    if (file === 'dashboard.html') return 'dashboard';
+    if (file === 'approval.html') return 'approval';
+    if (file === 'done.html') return 'done';
+    if (file === 'rekap.html') return 'rekap';
+    if (file === 'rejected.html') return 'rejected';
+    if (file === 'print.html') return 'print';
+
     return null;
   }
 
@@ -1129,10 +1145,14 @@ window.ROLE_NAMES = ROLE_NAMES;
       'RejectedDate': 'Rejected Date',
       'RejectedReason': 'Reason'
     };
+    // FIX v4.1.7: Hanya tambah kolom "Aksi" untuk halaman yang punya tombol aksi
+    // (approval = Approve/Reject, done = Mark Done). Halaman rekap/rejected tidak punya aksi.
+    // Sebelumnya header Aksi selalu ditambah → misalign dengan body yang tidak punya sel Aksi.
+    var hasActions = (page === 'approval' || page === 'done');
     var headerHtml = state.headers.map(function (h) {
       var displayName = DISPLAY_NAMES[h] || h;
       var html = '<th>' + _escapeHtml(displayName) + '</th>';
-      if (h === 'ID') html += '<th>Aksi</th>';
+      if (hasActions && h === 'ID') html += '<th>Aksi</th>';
       return html;
     }).join('');
     thead.innerHTML = '<tr>' + headerHtml + '</tr>';
@@ -1145,7 +1165,7 @@ window.ROLE_NAMES = ROLE_NAMES;
         rekap: 'Belum ada data rekap (request yang sudah Done)',
         rejected: 'Tidak ada request yang ditolak'
       };
-      tbody.innerHTML = '<tr><td colspan="' + (state.headers.length + 1) + '" class="text-center" style="padding:40px 20px;"><div style="font-size:48px;opacity:0.3;margin-bottom:8px;">📭</div><div style="color:#6b7280;font-weight:600;">' + (msgs[page] || 'Data tidak ditemukan') + '</div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="' + (state.headers.length + (hasActions ? 1 : 0)) + '" class="text-center" style="padding:40px 20px;"><div style="font-size:48px;opacity:0.3;margin-bottom:8px;">📭</div><div style="color:#6b7280;font-weight:600;">' + (msgs[page] || 'Data tidak ditemukan') + '</div></td></tr>';
       return;
     }
 
