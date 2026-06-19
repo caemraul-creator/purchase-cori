@@ -1,9 +1,9 @@
 /* ============================================================
-   app.js - v4.2.6 (CONSOLIDATED + IIFE WRAP)
+   app.js - v4.2.7 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
 
 // Version marker — cek di console browser: APP_VERSION
-window.APP_VERSION = 'v4.2.6';
+window.APP_VERSION = 'v4.2.7';
 
 ;(function () {
 
@@ -854,26 +854,177 @@ function startAutoSync(intervalMinutes) {
   }, intervalMinutes * 60 * 1000);
 }
 
-// Add sync button ke .head-actions atau .head-bar
-// FIX v4.2.4: Cari juga .head-bar karena HTML pakai class itu
+// Add sync button ke .head-actions, .head-bar, atau .header (dashboard)
+// FIX v4.2.7: Tambah .header untuk dashboard + tombol Migrasi
 function addSyncButton() {
-  var ha = document.querySelector('.head-actions') || document.querySelector('.head-bar');
+  var ha = document.querySelector('.head-actions') || document.querySelector('.head-bar') || document.querySelector('.header');
   if (!ha) { setTimeout(addSyncButton, 1000); return; }
   if (document.getElementById('syncButton')) return;
-  var btn = document.createElement('button');
-  btn.id = 'syncButton';
-  btn.className = 'btn-secondary';
-  btn.style.cssText = 'display:flex;align-items:center;gap:6px;';
-  btn.innerHTML = '🔄 Sync';
-  btn.onclick = function () {
+
+  // Wrapper untuk tombol-tombol di pojok kanan
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = 'display:flex; gap:8px; align-items:center; position:absolute; top:20px; right:20px; z-index:10;';
+
+  // Tombol Sync
+  var syncBtn = document.createElement('button');
+  syncBtn.id = 'syncButton';
+  syncBtn.className = 'btn-secondary';
+  syncBtn.style.cssText = 'display:flex;align-items:center;gap:6px;';
+  syncBtn.innerHTML = '🔄 Sync';
+  syncBtn.onclick = function () {
     confirmDialog({
-      title: 'Sinkronisasi',
-      message: 'Sinkronkan semua data dari Google Sheet ke Firebase?',
+      title: 'Sinkronisasi Firebase',
+      message: 'Sinkronkan semua data dari Google Sheet ke Firebase?<br><br><small>Ini akan meng-copy data terbaru dari spreadsheet ke Firebase cache, supaya loading lebih cepat dan data konsisten.</small>',
       confirmText: 'Ya, Sync',
       onConfirm: function () { syncAllSheets(false); }
     });
   };
-  ha.appendChild(btn);
+
+  // FIX v4.2.7: Tombol Migrasi — untuk input manual via spreadsheet
+  var migrasiBtn = document.createElement('button');
+  migrasiBtn.id = 'migrasiButton';
+  migrasiBtn.className = 'btn-secondary';
+  migrasiBtn.style.cssText = 'display:flex;align-items:center;gap:6px;background:#0f766e;color:#fff;';
+  migrasiBtn.innerHTML = '📋 Migrasi';
+  migrasiBtn.onclick = function () {
+    showMigrasiDialog();
+  };
+
+  wrapper.appendChild(syncBtn);
+  wrapper.appendChild(migrasiBtn);
+  ha.style.position = 'relative';
+  ha.appendChild(wrapper);
+}
+
+// FIX v4.2.7: Dialog Migrasi Data
+// Pilihan: (1) Spreadsheet → Firebase (copy data sheet ke Firebase)
+//          (2) Firebase → Spreadsheet (tidak didukung, read-only)
+//          (3) Cek konsistensi (compare jumlah data)
+function showMigrasiDialog() {
+  confirmDialog({
+    title: 'Migrasi & Konsistensi Data',
+    message: '<div style="text-align:left;line-height:1.7;">' +
+      '<p><b>Pilih aksi:</b></p>' +
+      '<p>🔄 <b>Sync Spreadsheet → Firebase</b><br><small>Copy semua data dari Google Sheet ke Firebase cache. Pakai kalau Anda input manual via spreadsheet dan Firebase tidak update.</small></p>' +
+      '<p>📊 <b>Cek Konsistensi</b><br><small>Compare jumlah data di Spreadsheet vs Firebase. Tampilkan selisih kalau ada.</small></p>' +
+      '<p>🗑️ <b>Clear Firebase Cache</b><br><small>Hapus semua data di Firebase cache. Pakai kalau Firebase ada data korup/stale.</small></p>' +
+      '</div>',
+    confirmText: '🔄 Sync',
+    cancelText: 'Tutup',
+    onConfirm: function () {
+      // Sync full
+      syncAllSheets(false);
+    },
+    onCancel: function () {
+      // Tampilkan opsi lanjutan
+      showMigrasiOptions();
+    }
+  });
+}
+
+function showMigrasiOptions() {
+  confirmDialog({
+    title: 'Opsi Migrasi Lanjutan',
+    message: 'Pilih opsi:',
+    confirmText: '📊 Cek Konsistensi',
+    cancelText: '🗑️ Clear Cache',
+    onConfirm: function () { checkDataConsistency(); },
+    onCancel: function () { clearFirebaseCache(); }
+  });
+}
+
+// FIX v4.2.7: Cek konsistensi data Spreadsheet vs Firebase
+function checkDataConsistency() {
+  if (!firebaseInitialized || !USE_FIREBASE) {
+    showToast('⚠️ Firebase belum aktif. Tidak bisa cek konsistensi.', 'error');
+    return;
+  }
+  showToast('📊 Mengecek konsistensi data...', 'warning', 5000);
+
+  var sheets = [
+    { name: 'main (Sheet1)', sheet: '', path: 'purchase_data/main' },
+    { name: 'done', sheet: 'done', path: 'purchase_data/done' },
+    { name: 'rejected', sheet: 'rejected', path: 'purchase_data/rejected' }
+  ];
+  var results = [], done = 0;
+
+  sheets.forEach(function (s) {
+    var sheetCount = 0, firebaseCount = 0;
+    // Ambil dari spreadsheet
+    loadDataFromAPI(function (apiData) {
+      sheetCount = (apiData || []).length;
+      // Ambil dari firebase
+      loadFromFirebase(s.path).then(function (fbData) {
+        firebaseCount = (fbData && fbData.length) ? fbData.length : 0;
+        var match = sheetCount === firebaseCount;
+        results.push({
+          name: s.name,
+          sheet: sheetCount,
+          firebase: firebaseCount,
+          match: match
+        });
+        done++;
+        if (done === sheets.length) showConsistencyResult(results);
+      }).catch(function () {
+        results.push({ name: s.name, sheet: sheetCount, firebase: 0, match: false });
+        done++;
+        if (done === sheets.length) showConsistencyResult(results);
+      });
+    }, s.sheet);
+  });
+}
+
+function showConsistencyResult(results) {
+  var html = '<div style="text-align:left;">' +
+    '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+    '<tr style="background:#f3f4f6;"><th style="padding:8px;text-align:left;">Sheet</th><th style="padding:8px;text-align:right;">Spreadsheet</th><th style="padding:8px;text-align:right;">Firebase</th><th style="padding:8px;text-align:center;">Status</th></tr>';
+  results.forEach(function (r) {
+    var status = r.match ? '✅' : '⚠️';
+    var statusColor = r.match ? '#16a34a' : '#dc2626';
+    html += '<tr style="border-bottom:1px solid #e5e7eb;">' +
+      '<td style="padding:8px;">' + r.name + '</td>' +
+      '<td style="padding:8px;text-align:right;">' + r.sheet + '</td>' +
+      '<td style="padding:8px;text-align:right;">' + r.firebase + '</td>' +
+      '<td style="padding:8px;text-align:center;color:' + statusColor + ';">' + status + '</td>' +
+      '</tr>';
+  });
+  html += '</table>';
+  var mismatches = results.filter(function (r) { return !r.match; });
+  if (mismatches.length > 0) {
+    html += '<p style="margin-top:12px;color:#dc2626;font-size:12px;">⚠️ Ada ' + mismatches.length + ' sheet yang tidak sinkron. Jalankan "Sync Spreadsheet → Firebase" untuk menyamakan.</p>';
+  } else {
+    html += '<p style="margin-top:12px;color:#16a34a;font-size:12px;">✅ Semua data sinkron!</p>';
+  }
+  html += '</div>';
+
+  confirmDialog({
+    title: '📊 Hasil Cek Konsistensi',
+    message: html,
+    confirmText: '🔄 Sync Sekarang',
+    cancelText: 'Tutup',
+    onConfirm: function () { syncAllSheets(false); }
+  });
+}
+
+// FIX v4.2.7: Clear Firebase cache
+function clearFirebaseCache() {
+  if (!firebaseInitialized || !USE_FIREBASE) {
+    showToast('⚠️ Firebase belum aktif.', 'error');
+    return;
+  }
+  confirmDialog({
+    title: 'Clear Firebase Cache',
+    message: 'Hapus SEMUA data di Firebase cache?<br><br><small>Setelah clear, data akan re-download dari spreadsheet saat load halaman berikutnya.</small>',
+    confirmText: 'Ya, Clear',
+    type: 'danger',
+    onConfirm: function () {
+      var paths = ['purchase_data/main', 'purchase_data/done', 'purchase_data/rejected'];
+      var done = 0;
+      paths.forEach(function (p) {
+        removeFromFirebase(p).then(function () { done++; if (done === paths.length) { clearCacheForAction(); showToast('✅ Firebase cache dibersihkan', 'success'); loadDashboardStats(); } }).catch(function () { done++; if (done === paths.length) { showToast('⚠️ Sebagian gagal di-clear', 'warning'); } });
+      });
+    }
+  });
 }
 
 
@@ -923,6 +1074,9 @@ window.loadMultipleSheets = loadMultipleSheets;
 window.syncAllSheets = syncAllSheets;
 window.startAutoSync = startAutoSync;
 window.addSyncButton = addSyncButton;
+window.showMigrasiDialog = showMigrasiDialog;
+window.checkDataConsistency = checkDataConsistency;
+window.clearFirebaseCache = clearFirebaseCache;
 
 // Config (const need explicit assignment)
 window.APP_CONFIG = APP_CONFIG;
@@ -1692,7 +1846,7 @@ window.ROLE_NAMES = ROLE_NAMES;
    Ini mengatasi masalah browser cache yang masih pakai versi lama.
    ============================================================ */
 (function () {
-  var EXPECTED_VERSION = 'v4.2.6';
+  var EXPECTED_VERSION = 'v4.2.7';
   if (window.APP_VERSION !== EXPECTED_VERSION) {
     console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
     // Force reload dengan cache-busting
