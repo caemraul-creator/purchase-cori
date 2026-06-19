@@ -1,9 +1,9 @@
 /* ============================================================
-   app.js - v4.1.9 (CONSOLIDATED + IIFE WRAP)
+   app.js - v4.2.4 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
 
 // Version marker — cek di console browser: APP_VERSION
-window.APP_VERSION = 'v4.1.9';
+window.APP_VERSION = 'v4.2.4';
 
 ;(function () {
 
@@ -790,6 +790,24 @@ function loadDataOptimized(callback, sheetName) {
   }
 }
 
+// FIX v4.2.1: Force refresh wrapper — langsung hit API, skip cache & Firebase.
+// Dipakai setelah action (approve/reject/done) supaya data selalu fresh,
+// tidak pakai Firebase cache yang bisa stale.
+function loadDataOptimizedForce(callback, sheetName) {
+  debugLog('🔄 Force refresh (skip cache & Firebase):', sheetName || 'main');
+  loadDataFromAPI(function (data) {
+    var cacheKey = sheetName || 'main';
+    if (data && data.length > 0) {
+      setCachedData(cacheKey, data);
+      // Update Firebase juga supaya sync
+      if (USE_FIREBASE && firebaseInitialized) {
+        saveToFirebase('purchase_data/' + cacheKey, data).catch(function(){});
+      }
+    }
+    if (callback) callback(data || []);
+  }, sheetName);
+}
+
 function loadMultipleSheets(sheets, onAllLoaded) {
   var results = {}, loaded = 0, total = sheets.length;
   if (total === 0) { if (onAllLoaded) onAllLoaded(results); return; }
@@ -836,9 +854,10 @@ function startAutoSync(intervalMinutes) {
   }, intervalMinutes * 60 * 1000);
 }
 
-// Add sync button ke .head-actions
+// Add sync button ke .head-actions atau .head-bar
+// FIX v4.2.4: Cari juga .head-bar karena HTML pakai class itu
 function addSyncButton() {
-  var ha = document.querySelector('.head-actions');
+  var ha = document.querySelector('.head-actions') || document.querySelector('.head-bar');
   if (!ha) { setTimeout(addSyncButton, 1000); return; }
   if (document.getElementById('syncButton')) return;
   var btn = document.createElement('button');
@@ -964,10 +983,10 @@ window.ROLE_NAMES = ROLE_NAMES;
   // Nominal, LastBuyingDate, OrderDate, Priority, OrderBy, Requester, Status, CreatedAt,
   // ApprovedBy, ApprovedDate, RejectedBy, RejectedDate, RejectedReason, DoneBy, DoneDate
   var HIDDEN_COLUMNS = {
-    approval: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy'],
-    done: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy'],
-    rekap: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'Requester', 'OrderBy', 'Status'],
-    rejected: ['DoneBy', 'DoneDate', 'Price', 'Nominal', 'LastBuyingDate', 'CreatedAt', 'ApprovedBy', 'ApprovedDate', 'OrderBy']
+    approval: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy', 'BoughtQty', 'RemainingQty'],
+    done: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy', 'BoughtQty', 'RemainingQty'],
+    rekap: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'Requester', 'OrderBy', 'BoughtQty'],
+    rejected: ['DoneBy', 'DoneDate', 'Price', 'Nominal', 'LastBuyingDate', 'CreatedAt', 'ApprovedBy', 'ApprovedDate', 'OrderBy', 'BoughtQty', 'RemainingQty']
   };
 
   // FIX v4.1.5: Urutan kolom EKSPLISIT mengikuti spreadsheet asli.
@@ -1057,8 +1076,11 @@ window.ROLE_NAMES = ROLE_NAMES;
     if (!q.trim()) {
       state.filteredData = state.allData.slice();
     } else {
+      // FIX v4.2.4: Search di SEMUA kolom (bukan hanya visible headers)
+      // Sebelumnya hanya cari di state.headers (kolom visible) → kalau cari
+      // "pending" tapi Status di-hide, tidak ketemu.
       state.filteredData = state.allData.filter(function (r) {
-        return state.headers.map(function (h) { return r[h]; }).join(' ').toLowerCase().indexOf(q) !== -1;
+        return Object.keys(r).map(function (k) { return r[k]; }).join(' ').toLowerCase().indexOf(q) !== -1;
       });
     }
     renderTable();
@@ -1140,9 +1162,11 @@ window.ROLE_NAMES = ROLE_NAMES;
       'RejectedReason': 'Reason'
     };
     // FIX v4.1.7: Hanya tambah kolom "Aksi" untuk halaman yang punya tombol aksi
-    // (approval = Approve/Reject, done = Mark Done). Halaman rekap/rejected tidak punya aksi.
-    // Sebelumnya header Aksi selalu ditambah → misalign dengan body yang tidak punya sel Aksi.
-    var hasActions = (page === 'approval' || page === 'done');
+    // - approval = Approve/Reject
+    // - done = Mark Done (untuk item approved)
+    // - rekap = Mark Done (untuk item partial yang masih ada sisa)
+    // - rejected = tidak ada aksi
+    var hasActions = (page === 'approval' || page === 'done' || page === 'rekap');
     var headerHtml = state.headers.map(function (h) {
       var displayName = DISPLAY_NAMES[h] || h;
       var html = '<th>' + _escapeHtml(displayName) + '</th>';
@@ -1183,6 +1207,16 @@ window.ROLE_NAMES = ROLE_NAMES;
               '</td>';
           } else if (page === 'done') {
             cell += '<td class="text-center"><button class="btn-primary" onclick="markDone(\'' + safeId + '\')" title="Mark Done">📦</button></td>';
+          } else if (page === 'rekap') {
+            // FIX v4.2.0: Di rekap, tampilkan tombol Mark Done hanya untuk item partial
+            // (yang masih ada sisa qty). Item done biasa tidak perlu tombol.
+            var status = String(r.Status || '').toLowerCase();
+            var remaining = Number(r.RemainingQty) || 0;
+            if (status === 'partial' && remaining > 0) {
+              cell += '<td class="text-center"><button class="btn-primary" onclick="markDone(\'' + safeId + '\')" title="Selesaikan sisa (' + remaining + ' unit)">📦</button></td>';
+            } else {
+              cell += '<td class="text-center"><span style="color:#9ca3af;font-size:11px;">—</span></td>';
+            }
           }
         }
         return cell;
@@ -1199,8 +1233,9 @@ window.ROLE_NAMES = ROLE_NAMES;
   // DATA LOADERS
   // =====================================================
 
-  function loadApprovalData() {
-    loadDataOptimized(function (data) {
+  function loadApprovalData(forceRefresh) {
+    if (forceRefresh) clearCache('main');
+    loadDataOptimizedForce(function (data) {
       state.allData = (data || []).filter(function (d) { return d.Status === 'pending'; });
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
@@ -1211,8 +1246,9 @@ window.ROLE_NAMES = ROLE_NAMES;
     });
   }
 
-  function loadDoneData() {
-    loadDataOptimized(function (data) {
+  function loadDoneData(forceRefresh) {
+    if (forceRefresh) clearCache('main');
+    loadDataOptimizedForce(function (data) {
       state.allData = (data || []).filter(function (d) { return d.Status === 'approved'; });
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
@@ -1225,7 +1261,7 @@ window.ROLE_NAMES = ROLE_NAMES;
 
   function loadRekapData(forceRefresh) {
     if (forceRefresh) clearCache('done');
-    loadDataOptimized(function (data) {
+    loadDataOptimizedForce(function (data) {
       state.allData = data || [];
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
@@ -1236,8 +1272,9 @@ window.ROLE_NAMES = ROLE_NAMES;
     }, 'done');
   }
 
-  function loadRejectedData() {
-    loadDataOptimized(function (data) {
+  function loadRejectedData(forceRefresh) {
+    if (forceRefresh) clearCache('rejected');
+    loadDataOptimizedForce(function (data) {
       state.allData = data || [];
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
@@ -1322,6 +1359,15 @@ window.ROLE_NAMES = ROLE_NAMES;
   window.markDone = function (id) {
     var data = state.allData.find(function (d) { return d.ID === id; });
     if (!data) { showToast('Data tidak ditemukan', 'error'); return; }
+
+    // FIX v4.2.0: Kalau dari rekap & item partial → langsung completeRemaining
+    // (item sudah di sheet Done, tidak perlu pilih Completed/Partial lagi)
+    var page = detectPage();
+    if (page === 'rekap' && String(data.Status || '').toLowerCase() === 'partial') {
+      completeRemaining(id);
+      return;
+    }
+
     confirmDialog({
       title: 'Tandai Selesai',
       message: 'Pilih aksi untuk permintaan ini:' + _itemDesc(data),
@@ -1329,6 +1375,26 @@ window.ROLE_NAMES = ROLE_NAMES;
       cancelText: '📦 Partial',
       onConfirm: function () { completeAll(id); },
       onCancel: function () { partialComplete(id); }
+    });
+  };
+
+  // Rekap: Complete Remaining (untuk item partial di sheet Done)
+  // FIX v4.2.0: Selesaikan sisa qty item partial yang ada di sheet Done
+  window.completeRemaining = function (id) {
+    var user = sessionStorage.getItem('username') || 'User';
+    var data = state.allData.find(function (d) { return d.ID === id; });
+    if (!data) { showToast('Data tidak ditemukan', 'error'); return; }
+    var remaining = Number(data.RemainingQty) || (Number(data.Qty) || 0);
+    confirmDialog({
+      title: 'Selesaikan Sisa',
+      message: 'Tandai <strong>Completed</strong> untuk sisa <b>' + remaining + '</b> unit?' + _itemDesc(data),
+      confirmText: 'Ya, Selesaikan',
+      onConfirm: function () {
+        var fd = new FormData();
+        fd.append('action', 'completeRemaining');
+        fd.append('ID', id); fd.append('Status', 'done'); fd.append('DoneBy', user);
+        submitAction(fd, 'Sisa request berhasil diselesaikan');
+      }
     });
   };
 
@@ -1411,23 +1477,47 @@ window.ROLE_NAMES = ROLE_NAMES;
       state.filteredData = state.filteredData.filter(function (r) { return r.ID !== id; });
       renderTable(); renderPagination();
 
-      // Reload dari server (background)
-      setTimeout(function () { reloadPageData(); }, 500);
+      // FIX v4.2.1: Force refresh dari API (skip Firebase cache yang bisa stale)
+      setTimeout(function () { reloadPageData(true); }, 500);
     } catch (err) {
       debugError('Action error:', err);
       showToast('Gagal: ' + err.message, 'error');
       // Reload data to revert optimistic update
-      setTimeout(function () { reloadPageData(); }, 500);
+      setTimeout(function () { reloadPageData(true); }, 500);
     }
   }
 
-  function reloadPageData() {
+  function reloadPageData(forceRefresh) {
     var page = detectPage();
-    if (page === 'approval') loadApprovalData();
-    else if (page === 'done') loadDoneData();
-    else if (page === 'rekap') loadRekapData(false);
-    else if (page === 'rejected') loadRejectedData();
+    if (page === 'approval') loadApprovalData(forceRefresh);
+    else if (page === 'done') loadDoneData(forceRefresh);
+    else if (page === 'rekap') loadRekapData(forceRefresh);
+    else if (page === 'rejected') loadRejectedData(forceRefresh);
   }
+
+  // FIX v4.2.4: Expose refresh functions untuk tombol Refresh di HTML
+  // Sebelumnya done.html panggil refreshDoneData() tapi function tidak ada
+  window.reloadPageData = reloadPageData;
+  window.refreshDoneData = function () {
+    showToast('🔄 Refresh data...', 'warning', 2000);
+    reloadPageData(true);
+  };
+  window.refreshApprovalData = function () {
+    showToast('🔄 Refresh data...', 'warning', 2000);
+    reloadPageData(true);
+  };
+  window.refreshRekapData = function () {
+    showToast('🔄 Refresh data...', 'warning', 2000);
+    reloadPageData(true);
+  };
+  window.refreshRejectedData = function () {
+    showToast('🔄 Refresh data...', 'warning', 2000);
+    reloadPageData(true);
+  };
+  window.refreshDashboard = function () {
+    showToast('🔄 Refresh dashboard...', 'warning', 2000);
+    loadDashboardStats();
+  };
 
   // =====================================================
   // DASHBOARD (greeting + menu + stats)
@@ -1592,7 +1682,7 @@ window.ROLE_NAMES = ROLE_NAMES;
    Ini mengatasi masalah browser cache yang masih pakai versi lama.
    ============================================================ */
 (function () {
-  var EXPECTED_VERSION = 'v4.1.9';
+  var EXPECTED_VERSION = 'v4.2.4';
   if (window.APP_VERSION !== EXPECTED_VERSION) {
     console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
     // Force reload dengan cache-busting
