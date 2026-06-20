@@ -10,19 +10,29 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.3.5">
+  <link rel="stylesheet" href="style.css?v=4.3.7">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <!-- Core + App -->
-  <script src="app.js?v=4.3.5"></script>
+  <script src="app.js?v=4.3.7"></script>
   <style>
-    .form-card {
-      max-width: 700px;
+    /* FIX v4.3.6: Layout kiri-kanan (form + history) */
+    .main-layout {
+      display: grid;
+      grid-template-columns: minmax(380px, 1fr) minmax(420px, 1.3fr);
+      gap: 20px;
+      max-width: 1400px;
       margin: 0 auto;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .main-layout { grid-template-columns: 1fr; }
+    }
+    .form-card {
       background: var(--surface, #fff);
       border-radius: 12px;
-      padding: 28px;
+      padding: 24px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
     .form-group { margin-bottom: 16px; }
@@ -78,12 +88,29 @@
 
     /* Tabel history 15 data terakhir */
     .history-card {
-      max-width: 700px;
-      margin: 24px auto 0;
       background: var(--surface, #fff);
       border-radius: 12px;
       padding: 20px 24px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .history-search-box {
+      margin-bottom: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .history-search-box input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .history-info {
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      font-style: italic;
     }
     .history-card h3 {
       margin: 0 0 4px;
@@ -271,7 +298,9 @@
     <a href="dashboard.html" class="btn-secondary btn-link">&larr; Dashboard</a>
   </div>
 
-  <!-- FORM -->
+  <!-- FIX v4.3.6: Layout kiri-kanan -->
+  <div class="main-layout">
+  <!-- FORM (KIRI) -->
   <div class="form-card">
     <div class="form-title">Formulir Permintaan Pembelian</div>
     <div class="form-subtitle">Isi data dengan lengkap. Status awal akan menjadi <b>Pending</b>.</div>
@@ -376,6 +405,11 @@
       </div>
 
       <div class="nominal-box" id="NominalDisplay">Rp 0</div>
+
+      <div class="form-group">
+        <label>Order By (Pemohon)</label>
+        <input type="text" id="OrderBy" placeholder="Nama yang mengajukan order">
+      </div>
 
       <div class="form-row">
         <div class="form-group">
@@ -496,6 +530,14 @@
           </div>
         </div>
         <div class="edit-form-group">
+          <label>Order By (Pemohon)</label>
+          <input type="text" id="editOrderBy" placeholder="Nama yang mengajukan order">
+        </div>
+        <div class="edit-form-group">
+          <label>Requester (Penerima)</label>
+          <input type="text" id="editRequester" placeholder="Nama penerima request">
+        </div>
+        <div class="edit-form-group">
           <label>Status</label>
           <select id="editStatus">
             <option value="pending">Pending</option>
@@ -562,7 +604,8 @@
       fd.append('OrderDate', document.getElementById('OrderDate').value);
       fd.append('Priority', document.getElementById('Priority').value);
       fd.append('Requester', sessionStorage.getItem('fullName') || sessionStorage.getItem('username') || 'User');
-      fd.append('OrderBy', sessionStorage.getItem('username') || 'User');
+      var orderByInput = document.getElementById('OrderBy');
+      fd.append('OrderBy', (orderByInput && orderByInput.value.trim()) ? orderByInput.value.trim() : (sessionStorage.getItem('username') || 'User'));
       fd.append('Status', 'pending');
 
       showToast('Mengirim request...', 'warning', 5000);
@@ -597,20 +640,51 @@
       }
     }
 
-    // === Load 15 data terakhir ===
+    // === Load 15 data terakhir + search ===
+    var allHistoryData = [];
+
     function loadHistoryData() {
       var wrap = document.getElementById('historyTableWrap');
       if (!wrap) return;
       wrap.innerHTML = '<div class="history-loading">⏳ Memuat data...</div>';
 
-      // Ambil data dari sheet main (Sheet1) — active requests
       if (typeof loadDataFromAPI === 'function') {
         loadDataFromAPI(function (data) {
-          renderHistoryTable(data || []);
+          allHistoryData = data || [];
+          // Sort by tanggal terbaru
+          allHistoryData.sort(function (a, b) {
+            var da = new Date(a.SubmissionDate || a.CreatedAt || 0).getTime();
+            var db = new Date(b.SubmissionDate || b.CreatedAt || 0).getTime();
+            return db - da;
+          });
+          renderHistoryTable(allHistoryData.slice(0, 15));
         });
       } else {
         wrap.innerHTML = '<div class="history-empty">app.js belum loaded</div>';
       }
+    }
+
+    function searchHistory() {
+      var q = document.getElementById('historySearch').value.toLowerCase().trim();
+      var info = document.getElementById('historyInfo');
+
+      if (!q) {
+        // Kosong → tampilkan 15 terbaru
+        renderHistoryTable(allHistoryData.slice(0, 15));
+        info.textContent = 'Menampilkan 15 data terbaru';
+        return;
+      }
+
+      // Search di semua data
+      var filtered = allHistoryData.filter(function (r) {
+        var text = ((r.ID || '') + ' ' + (r.Items || '') + ' ' + (r.Description || '') + ' ' + (r.Requester || '') + ' ' + (r.Department || '') + ' ' + (r.ProjectName || '')).toLowerCase();
+        return text.indexOf(q) !== -1;
+      });
+
+      // Batasi 50 hasil supaya tidak berat
+      var display = filtered.slice(0, 50);
+      renderHistoryTable(display);
+      info.textContent = 'Ditemukan ' + filtered.length + ' data (menampilkan ' + display.length + ')';
     }
 
     function renderHistoryTable(data) {
@@ -638,6 +712,7 @@
       html += '<th>Dept</th>';
       html += '<th class="text-center">Qty</th>';
       html += '<th class="text-right">Nominal</th>';
+      html += '<th>Order By</th>';
       html += '<th>Requester</th>';
       html += '<th class="text-center">Status</th>';
       html += '<th class="text-center">Aksi</th>';
@@ -655,6 +730,7 @@
         var qty = r.Qty || 0;
         var unit = r.Unit || '';
         var nominal = r.Nominal || 0;
+        var orderBy = r.OrderBy || '-';
         var requester = r.Requester || '-';
         var status = (r.Status || 'pending').toLowerCase();
 
@@ -692,6 +768,7 @@
         html += '<td>' + esc(dept) + '</td>';
         html += '<td class="text-center">' + esc(qty) + (unit ? ' ' + esc(unit) : '') + '</td>';
         html += '<td class="text-right">' + esc(nominalStr) + '</td>';
+        html += '<td>' + esc(orderBy) + '</td>';
         html += '<td>' + esc(requester) + '</td>';
         html += '<td class="text-center"><span class="history-status ' + status + '">' + esc(status) + '</span></td>';
         html += '<td class="text-center"><button onclick="editRequest(\'' + esc(id) + '\')" style="background:#0f766e;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;" title="Edit">✏️ Edit</button></td>';
@@ -713,6 +790,7 @@
 
     // Expose supaya bisa di-refresh setelah submit
     window.loadHistoryData = loadHistoryData;
+    window.searchHistory = searchHistory;
 
     // === Edit Request Functions ===
     var editDataCache = {};
@@ -747,6 +825,8 @@
       document.getElementById('editItems').value = data.Items || '';
       document.getElementById('editPartOf').value = data.PartOf || '';
       document.getElementById('editPriority').value = data.Priority || 'Medium';
+      document.getElementById('editOrderBy').value = data.OrderBy || '';
+      document.getElementById('editRequester').value = data.Requester || '';
       document.getElementById('editDescription').value = data.Description || '';
       document.getElementById('editQty').value = data.Qty || '';
       document.getElementById('editUnit').value = data.Unit || 'Pcs';
@@ -820,6 +900,8 @@
       fd.append('Unit', document.getElementById('editUnit').value);
       fd.append('Price', document.getElementById('editPrice').value);
       fd.append('Status', document.getElementById('editStatus').value);
+      fd.append('OrderBy', document.getElementById('editOrderBy').value);
+      fd.append('Requester', document.getElementById('editRequester').value);
 
       var lbd = document.getElementById('editLastBuyingDate').value;
       if (lbd) fd.append('LastBuyingDate', lbd);
