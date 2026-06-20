@@ -10,12 +10,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.3.7">
+  <link rel="stylesheet" href="style.css?v=4.3.9">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <!-- Core + App -->
-  <script src="app.js?v=4.3.7"></script>
+  <script src="app.js?v=4.3.9"></script>
   <style>
     /* FIX v4.3.6: Layout kiri-kanan (form + history) */
     .main-layout {
@@ -24,7 +24,7 @@
       gap: 20px;
       max-width: 1400px;
       margin: 0 auto;
-      align-items: start;
+      align-items: stretch;
     }
     @media (max-width: 1024px) {
       .main-layout { grid-template-columns: 1fr; }
@@ -92,6 +92,13 @@
       border-radius: 12px;
       padding: 20px 24px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+    .history-table-wrap {
+      flex: 1 1 auto;
+      overflow: auto;
     }
     .history-search-box {
       margin-bottom: 12px;
@@ -429,10 +436,17 @@
     </form>
   </div>
 
-  <!-- Tabel 15 data terakhir -->
+  <!-- HISTORY (KANAN) — 15 data terakhir + search untuk edit -->
   <div class="history-card">
-    <h3>📋 15 Data Terakhir</h3>
-    <p class="subtitle">Request yang baru saja di-submit (semua status)</p>
+    <h3>📋 Data Request</h3>
+    <p class="subtitle">15 data terbaru. Cari untuk edit data lain.</p>
+
+    <!-- Search box untuk cari data lain yang mau diedit -->
+    <div class="history-search-box">
+      <input type="text" id="historySearch" placeholder="🔍 Cari ID / item / requester untuk edit..." oninput="searchHistory()">
+    </div>
+    <div class="history-info" id="historyInfo">Menampilkan 15 data terbaru</div>
+
     <div class="history-table-wrap" id="historyTableWrap">
       <div class="history-loading">⏳ Memuat data...</div>
     </div>
@@ -641,27 +655,85 @@
     }
 
     // === Load 15 data terakhir + search ===
+    // OPTIMIZATION v4.3.9: Pakai cache lokal dulu (instant), baru background refresh
     var allHistoryData = [];
+    var historyCacheKey = 'pr_history_cache';
+    var historyCacheTime = 'pr_history_cache_time';
+    var HISTORY_CACHE_TTL = 2 * 60 * 1000; // 2 menit
 
     function loadHistoryData() {
       var wrap = document.getElementById('historyTableWrap');
       if (!wrap) return;
-      wrap.innerHTML = '<div class="history-loading">⏳ Memuat data...</div>';
 
-      if (typeof loadDataFromAPI === 'function') {
-        loadDataFromAPI(function (data) {
+      // 1. Coba cache lokal dulu (instant render)
+      try {
+        var cached = sessionStorage.getItem(historyCacheKey);
+        var cachedTime = sessionStorage.getItem(historyCacheTime);
+        if (cached && cachedTime) {
+          var age = Date.now() - parseInt(cachedTime);
+          if (age < HISTORY_CACHE_TTL) {
+            allHistoryData = JSON.parse(cached);
+            renderHistoryTable(allHistoryData.slice(0, 15));
+            // Tetap background refresh kalau > 1 menit
+            return;
+          }
+        }
+      } catch(e) {}
+
+      // 2. Fetch fresh data
+      wrap.innerHTML = '<div class="history-loading">⏳ Memuat data...</div>';
+      fetchHistoryFromAPI();
+    }
+
+    function fetchHistoryFromAPI() {
+      if (typeof API_URL === 'undefined') {
+        document.getElementById('historyTableWrap').innerHTML = '<div class="history-empty">app.js belum loaded</div>';
+        return;
+      }
+
+      // OPTIMIZATION: Pakai fetch langsung + cache-busting (skip Firebase, skip JSONP fallback)
+      var url = API_URL + '?action=read&_t=' + Date.now();
+      fetch(url, { method: 'GET', cache: 'no-store' })
+        .then(function (res) { return res.text(); })
+        .then(function (text) {
+          // Strip callback() wrapper
+          var match = text.match(/^[a-zA-Z_$][\w$]*\s*\(([\s\S]*)\)\s*;?\s*$/);
+          var jsonStr = match ? match[1] : text;
+          var data = JSON.parse(jsonStr);
           allHistoryData = data || [];
+
           // Sort by tanggal terbaru
           allHistoryData.sort(function (a, b) {
             var da = new Date(a.SubmissionDate || a.CreatedAt || 0).getTime();
             var db = new Date(b.SubmissionDate || b.CreatedAt || 0).getTime();
             return db - da;
           });
+
+          // Cache ke sessionStorage (instant next load)
+          try {
+            sessionStorage.setItem(historyCacheKey, JSON.stringify(allHistoryData));
+            sessionStorage.setItem(historyCacheTime, String(Date.now()));
+          } catch(e) {}
+
           renderHistoryTable(allHistoryData.slice(0, 15));
+        })
+        .catch(function (err) {
+          console.error('History fetch error:', err);
+          // Fallback ke loadDataFromAPI
+          if (typeof loadDataFromAPI === 'function') {
+            loadDataFromAPI(function (data) {
+              allHistoryData = data || [];
+              allHistoryData.sort(function (a, b) {
+                var da = new Date(a.SubmissionDate || a.CreatedAt || 0).getTime();
+                var db = new Date(b.SubmissionDate || b.CreatedAt || 0).getTime();
+                return db - da;
+              });
+              renderHistoryTable(allHistoryData.slice(0, 15));
+            });
+          } else {
+            document.getElementById('historyTableWrap').innerHTML = '<div class="history-empty">❌ Gagal memuat data</div>';
+          }
         });
-      } else {
-        wrap.innerHTML = '<div class="history-empty">app.js belum loaded</div>';
-      }
     }
 
     function searchHistory() {
@@ -791,17 +863,36 @@
     // Expose supaya bisa di-refresh setelah submit
     window.loadHistoryData = loadHistoryData;
     window.searchHistory = searchHistory;
+    window.fetchHistoryFromAPI = fetchHistoryFromAPI;
 
     // === Edit Request Functions ===
     var editDataCache = {};
 
+    // OPTIMIZATION v4.3.9: editRequest pakai allHistoryData yang sudah ada (instant)
     function editRequest(id) {
-      // Cari data dari history atau fetch ulang
+      // 1. Cari di cache editDataCache dulu
       var data = editDataCache[id];
-      if (!data) {
-        showToast('⏳ Memuat data...', 'warning', 2000);
-        if (typeof loadDataFromAPI === 'function') {
-          loadDataFromAPI(function (allData) {
+      if (data) { populateEditForm(data); return; }
+
+      // 2. Cari di allHistoryData (sudah loaded di tabel) — INSTANT
+      if (allHistoryData && allHistoryData.length > 0) {
+        data = allHistoryData.find(function (d) { return d.ID === id; });
+        if (data) {
+          editDataCache[id] = data;
+          populateEditForm(data);
+          return;
+        }
+      }
+
+      // 3. Kalau tidak ada (data lama), fetch single record
+      showToast('⏳ Mencari data...', 'warning', 2000);
+      if (typeof API_URL !== 'undefined') {
+        fetch(API_URL + '?action=read&_t=' + Date.now(), { cache: 'no-store' })
+          .then(function (r) { return r.text(); })
+          .then(function (text) {
+            var match = text.match(/^[a-zA-Z_$][\w$]*\s*\(([\s\S]*)\)\s*;?\s*$/);
+            var jsonStr = match ? match[1] : text;
+            var allData = JSON.parse(jsonStr);
             data = (allData || []).find(function (d) { return d.ID === id; });
             if (data) {
               editDataCache[id] = data;
@@ -809,11 +900,9 @@
             } else {
               showToast('❌ Data tidak ditemukan', 'error');
             }
-          });
-        }
-        return;
+          })
+          .catch(function () { showToast('❌ Gagal memuat data', 'error'); });
       }
-      populateEditForm(data);
     }
 
     function populateEditForm(data) {
