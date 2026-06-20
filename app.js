@@ -20,7 +20,7 @@ window.APP_VERSION = 'v4.3.5';
 // 1. CONFIG
 // =====================================================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbw3lWUjVJTMwN6rToovwtcUx0OXaeWlRtR7RRjPBJfV2Ay5_xXzUyP449FI-7-MCUfx9w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx3K0IPnfzsZ16RiOsrPWwAwDxNvNzbDruWjbTDIZXe2TBB6bXcDhD3PRH3lVBst2UbEQ/exec";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBY6B_AMQjeWCfzQiVPtQCLTlTz3ShInwo",
