@@ -10,12 +10,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.4.4">
+  <link rel="stylesheet" href="style.css?v=4.4.5">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <!-- Core + App -->
-  <script src="app.js?v=4.4.4"></script>
+  <script src="app.js?v=4.4.5"></script>
   <style>
     /* FIX v4.3.6: Layout kiri-kanan (form + history) */
     .main-layout {
@@ -785,17 +785,12 @@
       sorted.forEach(function (r) {
         var id = r.ID || '-';
         var type = (r.Type || 'request').toString().toLowerCase();
-        var typeLabel = (type === 'project') ? '🔧' : '📋';
-        var typeClass = (type === 'project') ? 'history-status partial' : 'history-status approved';
-        var projectName = r.ProjectName || '-';
+        var typeIcon = (type === 'project') ? '🔧' : '📋';
         var sub = r.SubmissionDate || r.CreatedAt || '';
         var item = r.Items || r.ItemName || '-';
-        var dept = r.Department || '-';
         var qty = r.Qty || 0;
         var unit = r.Unit || '';
-        var nominal = r.Nominal || 0;
         var orderBy = r.OrderBy || '-';
-        var requester = r.Requester || '-';
         var status = (r.Status || 'pending').toLowerCase();
 
         // Format tanggal

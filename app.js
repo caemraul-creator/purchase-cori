@@ -1,9 +1,9 @@
 /* ============================================================
-   app.js - v4.4.4 (CONSOLIDATED + IIFE WRAP)
+   app.js - v4.4.5 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
 
 // Version marker — cek di console browser: APP_VERSION
-window.APP_VERSION = 'v4.4.4';
+window.APP_VERSION = 'v4.4.5';
 
 ;(function () {
 
@@ -1918,7 +1918,7 @@ window.ROLE_NAMES = ROLE_NAMES;
    Ini mengatasi masalah browser cache yang masih pakai versi lama.
    ============================================================ */
 (function () {
-  var EXPECTED_VERSION = 'v4.4.4';
+  var EXPECTED_VERSION = 'v4.4.5';
   if (window.APP_VERSION !== EXPECTED_VERSION) {
     console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
     // Force reload dengan cache-busting
