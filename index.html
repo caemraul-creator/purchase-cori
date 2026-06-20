@@ -10,12 +10,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.2.9">
+  <link rel="stylesheet" href="style.css?v=4.3.5">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <!-- Core + App -->
-  <script src="app.js?v=4.2.9"></script>
+  <script src="app.js?v=4.3.5"></script>
   <style>
     .form-card {
       max-width: 700px;
@@ -75,6 +75,188 @@
       text-align: center; margin-bottom: 24px;
       font-size: 14px; color: var(--muted, #6b7280);
     }
+
+    /* Tabel history 15 data terakhir */
+    .history-card {
+      max-width: 700px;
+      margin: 24px auto 0;
+      background: var(--surface, #fff);
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .history-card h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .history-card .subtitle {
+      margin: 0 0 14px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .history-table-wrap {
+      max-height: 480px;
+      overflow: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .history-table thead {
+      position: sticky;
+      top: 0;
+      background: #f3f4f6;
+      z-index: 2;
+    }
+    .history-table th {
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+    .history-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #f3f4f6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+    .history-table tbody tr:hover {
+      background: #f9fafb;
+    }
+    .history-table .text-right { text-align: right; }
+    .history-table .text-center { text-align: center; }
+    .history-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .history-status.pending { background: #fef3c7; color: #92400e; }
+    .history-status.approved { background: #d1fae5; color: #065f46; }
+    .history-status.done { background: #ccfbf1; color: #115e59; }
+    .history-status.rejected { background: #fee2e2; color: #991b1b; }
+    .history-status.partial { background: #ffedd5; color: #9a3412; }
+    .history-empty {
+      padding: 32px 20px;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 13px;
+    }
+    .history-loading {
+      padding: 24px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    /* Modal Edit */
+    .edit-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+    }
+    .edit-modal.show { display: flex; }
+    .edit-modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    .edit-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .edit-modal-header h3 { margin: 0; font-size: 18px; }
+    .edit-modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+    }
+    .edit-form-group { margin-bottom: 12px; }
+    .edit-form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+    .edit-form-group input, .edit-form-group select, .edit-form-group textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .edit-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .edit-form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) {
+      .edit-form-row, .edit-form-row-3 { grid-template-columns: 1fr; }
+    }
+    .edit-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .btn-save {
+      background: #0f766e;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-save:hover { background: #115e59; }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-cancel {
+      background: #e5e7eb;
+      color: #374151;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
   </style>
 </head>
 
@@ -95,6 +277,21 @@
     <div class="form-subtitle">Isi data dengan lengkap. Status awal akan menjadi <b>Pending</b>.</div>
 
     <form id="requestForm">
+      <div class="form-group">
+        <label>Jenis Permintaan *</label>
+        <select id="Type" required onchange="toggleTypeInfo()">
+          <option value="request">📋 Request Biasa (Pembelian)</option>
+          <option value="project">🔧 Mini Project (Perbaikan/Maintenance)</option>
+        </select>
+        <small id="typeInfo" style="display:block;margin-top:4px;font-size:11px;color:#6b7280;">Pilih "Mini Project" untuk permintaan yang berhubungan dengan perbaikan.</small>
+      </div>
+
+      <div class="form-group" id="projectNameGroup" style="display:none;">
+        <label>Nama Project *</label>
+        <input type="text" id="ProjectName" placeholder="Contoh: Perbaikan Mesin A, Service Motor Listrik">
+        <small style="display:block;margin-top:4px;font-size:11px;color:#6b7280;">Isi nama project untuk pengelompokan. Item dengan nama project sama akan dikelompokkan.</small>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label>Department *</label>
@@ -198,6 +395,124 @@
     </form>
   </div>
 
+  <!-- Tabel 15 data terakhir -->
+  <div class="history-card">
+    <h3>📋 15 Data Terakhir</h3>
+    <p class="subtitle">Request yang baru saja di-submit (semua status)</p>
+    <div class="history-table-wrap" id="historyTableWrap">
+      <div class="history-loading">⏳ Memuat data...</div>
+    </div>
+  </div>
+
+  <!-- Modal Edit -->
+  <div class="edit-modal" id="editModal">
+    <div class="edit-modal-content">
+      <div class="edit-modal-header">
+        <h3>✏️ Edit Request</h3>
+        <button class="edit-modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <form id="editForm" onsubmit="submitEdit(event)">
+        <input type="hidden" id="editID">
+        <div class="edit-form-group">
+          <label>Jenis Permintaan</label>
+          <select id="editType" onchange="toggleEditProjectName()">
+            <option value="request">📋 Request Biasa</option>
+            <option value="project">🔧 Mini Project</option>
+          </select>
+        </div>
+        <div class="edit-form-group" id="editProjectNameGroup" style="display:none;">
+          <label>Nama Project</label>
+          <input type="text" id="editProjectName" placeholder="Nama project">
+        </div>
+        <div class="edit-form-row">
+          <div class="edit-form-group">
+            <label>Department</label>
+            <input type="text" id="editDepartment" list="deptList">
+            <datalist id="deptList">
+              <option>Packing</option><option>Technician</option><option>Production</option>
+              <option>Marketing</option><option>Office</option><option>QC</option>
+              <option>Warehouse</option><option>HRD</option><option>Finance</option>
+            </datalist>
+          </div>
+          <div class="edit-form-group">
+            <label>Office / Lokasi</label>
+            <input type="text" id="editOffice" list="officeList">
+            <datalist id="officeList">
+              <option>Ngabul</option><option>Troso</option><option>Sekarjati</option>
+              <option>Jepara</option><option>Kudus</option>
+            </datalist>
+          </div>
+        </div>
+        <div class="edit-form-group">
+          <label>Nama Barang</label>
+          <input type="text" id="editItems" required>
+        </div>
+        <div class="edit-form-row">
+          <div class="edit-form-group">
+            <label>Part Of</label>
+            <input type="text" id="editPartOf">
+          </div>
+          <div class="edit-form-group">
+            <label>Priority</label>
+            <select id="editPriority">
+              <option>Low</option><option>Medium</option><option>High</option><option>Urgent</option>
+            </select>
+          </div>
+        </div>
+        <div class="edit-form-group">
+          <label>Deskripsi</label>
+          <textarea id="editDescription" rows="2"></textarea>
+        </div>
+        <div class="edit-form-row-3">
+          <div class="edit-form-group">
+            <label>Qty</label>
+            <input type="number" id="editQty" min="1" step="any" required oninput="calcEditNominal()">
+          </div>
+          <div class="edit-form-group">
+            <label>Satuan</label>
+            <select id="editUnit">
+              <option>Pcs</option><option>Box</option><option>Pack</option><option>Rim</option>
+              <option>Dus</option><option>Botol</option><option>Kg</option><option>Liter</option>
+              <option>Set</option><option>Lbr</option><option>Roll</option><option>Unit</option>
+            </select>
+          </div>
+          <div class="edit-form-group">
+            <label>Harga (Rp)</label>
+            <input type="number" id="editPrice" min="0" step="any" required oninput="calcEditNominal()">
+          </div>
+        </div>
+        <div class="edit-form-group">
+          <label>Nominal</label>
+          <input type="text" id="editNominalDisplay" readonly style="background:#f9fafb;font-weight:600;color:#0f766e;">
+        </div>
+        <div class="edit-form-row">
+          <div class="edit-form-group">
+            <label>Tgl Beli Terakhir</label>
+            <input type="date" id="editLastBuyingDate">
+          </div>
+          <div class="edit-form-group">
+            <label>Tgl Order</label>
+            <input type="date" id="editOrderDate">
+          </div>
+        </div>
+        <div class="edit-form-group">
+          <label>Status</label>
+          <select id="editStatus">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="done">Done</option>
+            <option value="partial">Partial</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="edit-actions">
+          <button type="button" class="btn-cancel" onclick="closeEditModal()">Batal</button>
+          <button type="submit" class="btn-save" id="editSaveBtn">💾 Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script>
@@ -229,6 +544,11 @@
 
       var fd = new FormData();
       fd.append('action', 'create');
+      fd.append('Type', document.getElementById('Type').value);
+      var projectInput = document.getElementById('ProjectName');
+      if (projectInput && projectInput.value.trim()) {
+        fd.append('ProjectName', projectInput.value.trim());
+      }
       fd.append('Department', document.getElementById('Department').value);
       fd.append('Office', document.getElementById('Office').value);
       fd.append('Items', document.getElementById('Items').value);
@@ -257,6 +577,293 @@
           showToast('Gagal mengirim: ' + err.message, 'error');
         });
     });
+
+    // Toggle info text & show/hide ProjectName saat ganti jenis permintaan
+    function toggleTypeInfo() {
+      var type = document.getElementById('Type').value;
+      var info = document.getElementById('typeInfo');
+      var projectGroup = document.getElementById('projectNameGroup');
+      var projectInput = document.getElementById('ProjectName');
+      if (type === 'project') {
+        info.style.color = '#0f766e';
+        info.textContent = '🔧 Mini Project — data tetap di Sheet1, difilter via kolom Type.';
+        if (projectGroup) projectGroup.style.display = 'block';
+        if (projectInput) projectInput.required = true;
+      } else {
+        info.style.color = '#6b7280';
+        info.textContent = 'Pilih "Mini Project" untuk permintaan yang berhubungan dengan perbaikan.';
+        if (projectGroup) projectGroup.style.display = 'none';
+        if (projectInput) { projectInput.required = false; projectInput.value = ''; }
+      }
+    }
+
+    // === Load 15 data terakhir ===
+    function loadHistoryData() {
+      var wrap = document.getElementById('historyTableWrap');
+      if (!wrap) return;
+      wrap.innerHTML = '<div class="history-loading">⏳ Memuat data...</div>';
+
+      // Ambil data dari sheet main (Sheet1) — active requests
+      if (typeof loadDataFromAPI === 'function') {
+        loadDataFromAPI(function (data) {
+          renderHistoryTable(data || []);
+        });
+      } else {
+        wrap.innerHTML = '<div class="history-empty">app.js belum loaded</div>';
+      }
+    }
+
+    function renderHistoryTable(data) {
+      var wrap = document.getElementById('historyTableWrap');
+      if (!wrap) return;
+
+      if (!data || data.length === 0) {
+        wrap.innerHTML = '<div class="history-empty">📭 Belum ada data request</div>';
+        return;
+      }
+
+      // Sort by tanggal terbaru, ambil 15
+      var sorted = data.slice().sort(function (a, b) {
+        var da = new Date(a.SubmissionDate || a.CreatedAt || 0).getTime();
+        var db = new Date(b.SubmissionDate || b.CreatedAt || 0).getTime();
+        return db - da;
+      }).slice(0, 15);
+
+      var html = '<table class="history-table"><thead><tr>';
+      html += '<th>ID</th>';
+      html += '<th>Type</th>';
+      html += '<th>Project</th>';
+      html += '<th>Submission</th>';
+      html += '<th>Item</th>';
+      html += '<th>Dept</th>';
+      html += '<th class="text-center">Qty</th>';
+      html += '<th class="text-right">Nominal</th>';
+      html += '<th>Requester</th>';
+      html += '<th class="text-center">Status</th>';
+      html += '<th class="text-center">Aksi</th>';
+      html += '</tr></thead><tbody>';
+
+      sorted.forEach(function (r) {
+        var id = r.ID || '-';
+        var type = (r.Type || 'request').toString().toLowerCase();
+        var typeLabel = (type === 'project') ? '🔧' : '📋';
+        var typeClass = (type === 'project') ? 'history-status partial' : 'history-status approved';
+        var projectName = r.ProjectName || '-';
+        var sub = r.SubmissionDate || r.CreatedAt || '';
+        var item = r.Items || r.ItemName || '-';
+        var dept = r.Department || '-';
+        var qty = r.Qty || 0;
+        var unit = r.Unit || '';
+        var nominal = r.Nominal || 0;
+        var requester = r.Requester || '-';
+        var status = (r.Status || 'pending').toLowerCase();
+
+        // Format tanggal
+        var subStr = '';
+        if (sub) {
+          try {
+            var d = new Date(sub);
+            if (!isNaN(d.getTime())) {
+              subStr = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+            } else { subStr = String(sub).substring(0, 16); }
+          } catch(e) { subStr = String(sub).substring(0, 16); }
+        }
+
+        // Format nominal
+        var nominalStr = '';
+        if (nominal) {
+          try { nominalStr = 'Rp ' + Number(nominal).toLocaleString('id-ID'); }
+          catch(e) { nominalStr = String(nominal); }
+        }
+
+        // Escape HTML
+        function esc(s) {
+          return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        var titleAttr = (item && item.length > 25) ? ' title="' + esc(item) + '"' : '';
+
+        html += '<tr>';
+        html += '<td>' + esc(id) + '</td>';
+        html += '<td class="text-center"><span class="' + typeClass + '">' + typeLabel + '</span></td>';
+        html += '<td>' + esc(projectName) + '</td>';
+        html += '<td>' + esc(subStr) + '</td>';
+        html += '<td' + titleAttr + '>' + esc(item) + '</td>';
+        html += '<td>' + esc(dept) + '</td>';
+        html += '<td class="text-center">' + esc(qty) + (unit ? ' ' + esc(unit) : '') + '</td>';
+        html += '<td class="text-right">' + esc(nominalStr) + '</td>';
+        html += '<td>' + esc(requester) + '</td>';
+        html += '<td class="text-center"><span class="history-status ' + status + '">' + esc(status) + '</span></td>';
+        html += '<td class="text-center"><button onclick="editRequest(\'' + esc(id) + '\')" style="background:#0f766e;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;" title="Edit">✏️ Edit</button></td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    }
+
+    // Load saat halaman ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(loadHistoryData, 800);
+      });
+    } else {
+      setTimeout(loadHistoryData, 800);
+    }
+
+    // Expose supaya bisa di-refresh setelah submit
+    window.loadHistoryData = loadHistoryData;
+
+    // === Edit Request Functions ===
+    var editDataCache = {};
+
+    function editRequest(id) {
+      // Cari data dari history atau fetch ulang
+      var data = editDataCache[id];
+      if (!data) {
+        showToast('⏳ Memuat data...', 'warning', 2000);
+        if (typeof loadDataFromAPI === 'function') {
+          loadDataFromAPI(function (allData) {
+            data = (allData || []).find(function (d) { return d.ID === id; });
+            if (data) {
+              editDataCache[id] = data;
+              populateEditForm(data);
+            } else {
+              showToast('❌ Data tidak ditemukan', 'error');
+            }
+          });
+        }
+        return;
+      }
+      populateEditForm(data);
+    }
+
+    function populateEditForm(data) {
+      document.getElementById('editID').value = data.ID || '';
+      document.getElementById('editType').value = (data.Type || 'request').toString().toLowerCase() === 'project' ? 'project' : 'request';
+      document.getElementById('editProjectName').value = data.ProjectName || '';
+      document.getElementById('editDepartment').value = data.Department || '';
+      document.getElementById('editOffice').value = data.Office || '';
+      document.getElementById('editItems').value = data.Items || '';
+      document.getElementById('editPartOf').value = data.PartOf || '';
+      document.getElementById('editPriority').value = data.Priority || 'Medium';
+      document.getElementById('editDescription').value = data.Description || '';
+      document.getElementById('editQty').value = data.Qty || '';
+      document.getElementById('editUnit').value = data.Unit || 'Pcs';
+      document.getElementById('editPrice').value = data.Price || '';
+      document.getElementById('editStatus').value = (data.Status || 'pending').toLowerCase();
+
+      // Parse tanggal
+      try {
+        if (data.LastBuyingDate) {
+          var d1 = new Date(data.LastBuyingDate);
+          if (!isNaN(d1.getTime())) {
+            document.getElementById('editLastBuyingDate').value = d1.toISOString().split('T')[0];
+          }
+        }
+        if (data.OrderDate) {
+          var d2 = new Date(data.OrderDate);
+          if (!isNaN(d2.getTime())) {
+            document.getElementById('editOrderDate').value = d2.toISOString().split('T')[0];
+          }
+        }
+      } catch(e) {}
+
+      toggleEditProjectName();
+      calcEditNominal();
+
+      document.getElementById('editModal').classList.add('show');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('show');
+    }
+
+    function toggleEditProjectName() {
+      var type = document.getElementById('editType').value;
+      var group = document.getElementById('editProjectNameGroup');
+      if (type === 'project') {
+        group.style.display = 'block';
+      } else {
+        group.style.display = 'none';
+      }
+    }
+
+    function calcEditNominal() {
+      var qty = parseFloat(document.getElementById('editQty').value) || 0;
+      var price = parseFloat(document.getElementById('editPrice').value) || 0;
+      var nominal = qty * price;
+      document.getElementById('editNominalDisplay').value = 'Rp ' + nominal.toLocaleString('id-ID');
+    }
+
+    function submitEdit(event) {
+      event.preventDefault();
+      var id = document.getElementById('editID').value;
+      if (!id) { showToast('❌ ID tidak ditemukan', 'error'); return; }
+
+      var btn = document.getElementById('editSaveBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyimpan...';
+
+      var fd = new FormData();
+      fd.append('action', 'update');
+      fd.append('ID', id);
+      fd.append('Type', document.getElementById('editType').value);
+      fd.append('ProjectName', document.getElementById('editProjectName').value);
+      fd.append('Department', document.getElementById('editDepartment').value);
+      fd.append('Office', document.getElementById('editOffice').value);
+      fd.append('Items', document.getElementById('editItems').value);
+      fd.append('PartOf', document.getElementById('editPartOf').value);
+      fd.append('Priority', document.getElementById('editPriority').value);
+      fd.append('Description', document.getElementById('editDescription').value);
+      fd.append('Qty', document.getElementById('editQty').value);
+      fd.append('Unit', document.getElementById('editUnit').value);
+      fd.append('Price', document.getElementById('editPrice').value);
+      fd.append('Status', document.getElementById('editStatus').value);
+
+      var lbd = document.getElementById('editLastBuyingDate').value;
+      if (lbd) fd.append('LastBuyingDate', lbd);
+      var od = document.getElementById('editOrderDate').value;
+      if (od) fd.append('OrderDate', od);
+
+      fetch(API_URL, { method: 'POST', body: fd })
+        .then(function (res) { return res.text(); })
+        .then(function (text) {
+          if (text && text.indexOf('Error') === 0) {
+            throw new Error(text);
+          }
+          showToast('✅ Data berhasil diupdate', 'success');
+          closeEditModal();
+          // Clear cache & reload history
+          editDataCache = {};
+          if (typeof clearCacheForAction === 'function') clearCacheForAction();
+          if (typeof loadHistoryData === 'function') loadHistoryData();
+        })
+        .catch(function (err) {
+          showToast('❌ Gagal: ' + err.message, 'error');
+        })
+        .finally(function () {
+          btn.disabled = false;
+          btn.textContent = '💾 Simpan Perubahan';
+        });
+    }
+
+    // Close modal saat click backdrop
+    document.addEventListener('DOMContentLoaded', function () {
+      var modal = document.getElementById('editModal');
+      if (modal) {
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) closeEditModal();
+        });
+      }
+    });
+
+    // Expose
+    window.editRequest = editRequest;
+    window.closeEditModal = closeEditModal;
+    window.toggleEditProjectName = toggleEditProjectName;
+    window.calcEditNominal = calcEditNominal;
+    window.submitEdit = submitEdit;
   </script>
 </body>
 

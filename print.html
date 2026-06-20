@@ -12,11 +12,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <!-- Consolidated JS (includes config) -->
-  <script src="app.js?v=4.2.9"></script>
+  <script src="app.js?v=4.3.5"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.2.9">
+  <link rel="stylesheet" href="style.css?v=4.3.5">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * {
@@ -356,6 +356,109 @@
         padding-top: 90px;
       }
     }
+
+    /* ============================================================
+       FIX v4.3.0: Print A4 Landscape — supaya data tidak terpotong
+       ============================================================ */
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+
+    @media print {
+      .header-print-actions,
+      #userFloater,
+      .nav-logout,
+      .print-controls {
+        display: none !important;
+      }
+
+      body {
+        background: white !important;
+        padding: 0 !important;
+      }
+
+      .print-area {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+      }
+
+      .print-area table {
+        width: 100% !important;
+        border-collapse: collapse;
+        table-layout: auto;
+      }
+
+      .print-area th {
+        padding: 4px 6px !important;
+        font-size: 9px !important;
+        background: #e5e7eb !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        border: 1px solid #999;
+        white-space: nowrap;
+      }
+
+      .print-area td {
+        padding: 3px 6px !important;
+        font-size: 8px !important;
+        border: 1px solid #ccc;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+      }
+
+      .print-area .print-header {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .print-area .print-header h1 {
+        font-size: 14px;
+        margin: 0;
+        color: #0c4a6e;
+      }
+
+      .print-area .print-header p {
+        font-size: 9px;
+        color: #666;
+        margin: 3px 0;
+      }
+
+      .print-sheet {
+        page-break-after: always;
+      }
+
+      .print-sheet:last-child {
+        page-break-after: auto;
+      }
+    }
+
+    .btn-print-a4 {
+      background: #0f766e;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 5px;
+    }
+
+    .btn-print-a4:hover {
+      background: #115e59;
+    }
+
+    .btn-print-a4:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
@@ -390,6 +493,25 @@
         <button class="btn btn-rejected" onclick="exportByPage('rejected')" id="btnRejected">
           📄 Export Rejected
         </button>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <h3 style="margin: 0 0 10px 0; font-size: 15px; color: #374151;">🖨️ Print A4 Landscape</h3>
+        <p style="font-size: 12px; color: #6b7280; margin: 0 0 10px 0;">Print langsung ke printer dengan format A4 Landscape (data tidak terpotong)</p>
+        <div class="buttons-grid">
+          <button class="btn-print-a4" onclick="printA4Landscape('index')" id="btnPrintRequest">
+            🖨️ Print Request
+          </button>
+          <button class="btn-print-a4" onclick="printA4Landscape('approval')" id="btnPrintApproval">
+            🖨️ Print Approval
+          </button>
+          <button class="btn-print-a4" onclick="printA4Landscape('rekap')" id="btnPrintRekap">
+            🖨️ Print Rekap
+          </button>
+          <button class="btn-print-a4" onclick="printA4Landscape('rejected')" id="btnPrintRejected">
+            🖨️ Print Rejected
+          </button>
+        </div>
       </div>
 
       <div class="info-box">
@@ -674,6 +796,57 @@
     }
 
     document.addEventListener('DOMContentLoaded', renderUserFloater);
+
+    // FIX v4.3.0: Print A4 Landscape — pakai window.print() dengan CSS @page
+    async function printA4Landscape(pageKey) {
+      const config = pageConfigs[pageKey];
+      const btnIds = { index: 'btnPrintRequest', approval: 'btnPrintApproval', rekap: 'btnPrintRekap', rejected: 'btnPrintRejected' };
+      const btn = document.getElementById(btnIds[pageKey]);
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Memuat...'; }
+
+      try {
+        showToast('⏳ Menyiapkan data untuk print...', 'warning');
+        const data = await fetchDataFromAPI(config.sheetName);
+        
+        let filteredData = data;
+        if (config.filter) {
+          filteredData = data.filter(row => (row.Status || '').toLowerCase() === config.filter);
+        }
+
+        // Buat div print-area tersembunyi
+        let printArea = document.getElementById('printAreaA4');
+        if (!printArea) {
+          printArea = document.createElement('div');
+          printArea.id = 'printAreaA4';
+          printArea.className = 'print-area';
+          printArea.style.cssText = 'display:none;';
+          document.body.appendChild(printArea);
+        }
+
+        printArea.innerHTML = `
+          <div class="print-header">
+            <h1>📄 ${config.title}</h1>
+            <p>Generated: ${new Date().toLocaleString('id-ID')} | Total: ${filteredData.length} records</p>
+          </div>
+          ${createTableHTML(data, config.hiddenColumns, config.filter)}
+        `;
+
+        // Tampilkan untuk print
+        printArea.style.display = 'block';
+        showToast('🖨️ Membuka dialog print...', 'success');
+        
+        // Trigger print
+        setTimeout(() => {
+          window.print();
+          // Sembunyikan lagi setelah print
+          printArea.style.display = 'none';
+          if (btn) { btn.disabled = false; btn.textContent = '🖨️ Print ' + pageKey.charAt(0).toUpperCase() + pageKey.slice(1); }
+        }, 500);
+      } catch (err) {
+        showToast('❌ Gagal: ' + err.message, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '🖨️ Print ' + pageKey.charAt(0).toUpperCase() + pageKey.slice(1); }
+      }
+    }
   </script>
 </body>
 

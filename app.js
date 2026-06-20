@@ -1,9 +1,9 @@
 /* ============================================================
-   app.js - v4.2.9 (CONSOLIDATED + IIFE WRAP)
+   app.js - v4.3.5 (CONSOLIDATED + IIFE WRAP)
    ============================================================ */
 
 // Version marker — cek di console browser: APP_VERSION
-window.APP_VERSION = 'v4.2.9';
+window.APP_VERSION = 'v4.3.5';
 
 ;(function () {
 
@@ -43,11 +43,11 @@ const ROLE_NAMES = {
 };
 
 const PERMISSIONS = {
-  admin: ['dashboard', 'request', 'approval', 'done', 'rekap', 'rejected', 'print'],
-  viewer: ['dashboard', 'request', 'print'],
-  staff_a: ['dashboard', 'request', 'rekap', 'rejected', 'print'],
-  staff_b: ['dashboard', 'request', 'approval', 'done', 'rekap', 'print'],
-  staff_c: ['dashboard', 'request', 'approval', 'done', 'rekap', 'rejected', 'print']
+  admin: ['dashboard', 'request', 'approval', 'done', 'rekap', 'rejected', 'miniproject', 'print'],
+  viewer: ['dashboard', 'request', 'miniproject', 'print'],
+  staff_a: ['dashboard', 'request', 'rekap', 'rejected', 'miniproject', 'print'],
+  staff_b: ['dashboard', 'request', 'approval', 'done', 'rekap', 'miniproject', 'print'],
+  staff_c: ['dashboard', 'request', 'approval', 'done', 'rekap', 'rejected', 'miniproject', 'print']
 };
 
 const APP_CONFIG = {
@@ -1139,6 +1139,7 @@ window.ROLE_NAMES = ROLE_NAMES;
     if (file === 'done.html') return 'done';
     if (file === 'rekap.html') return 'rekap';
     if (file === 'rejected.html') return 'rejected';
+    if (file === 'mini-project.html') return 'miniproject';
     if (file === 'print.html') return 'print';
 
     return null;
@@ -1227,8 +1228,9 @@ window.ROLE_NAMES = ROLE_NAMES;
     { id: 'approval', page: 'approval.html', icon: '📬', title: 'Approval Hub', desc: 'Central portal to review and approve requests.' },
     { id: 'done',     page: 'done.html',     icon: '📦', title: 'Fulfillment',  desc: 'Track and finalize procurement steps.' },
     { id: 'rekap',    page: 'rekap.html',    icon: '📊', title: 'Report Center',desc: 'Comprehensive analytics and history.' },
-    { id: 'rejected', page: 'rejected.html', icon: '⛔', title: 'Rejection Log',desc: 'Archive of non-fulfillment decisions.' },
-    { id: 'print',    page: 'print.html',    icon: '📥', title: 'Export & Print', desc: 'Download data purchase request to PDF/Excel.' }
+    { id: 'rejected',    page: 'rejected.html',    icon: '⛔', title: 'Rejection Log', desc: 'Archive of non-fulfillment decisions.' },
+    { id: 'miniproject', page: 'mini-project.html', icon: '🔧', title: 'Mini Project', desc: 'Permintaan khusus perbaikan & maintenance.' },
+    { id: 'print',       page: 'print.html',       icon: '📥', title: 'Export & Print', desc: 'Download data purchase request to PDF/Excel.' }
   ];
 
   // =====================================================
@@ -1351,7 +1353,8 @@ window.ROLE_NAMES = ROLE_NAMES;
         approval: 'Tidak ada request pending untuk di-approve',
         done: 'Tidak ada request approved untuk di-process',
         rekap: 'Belum ada data rekap (request yang sudah Done)',
-        rejected: 'Tidak ada request yang ditolak'
+        rejected: 'Tidak ada request yang ditolak',
+        miniproject: 'Belum ada data Mini Project (perbaikan)'
       };
       tbody.innerHTML = '<tr><td colspan="' + (state.headers.length + (hasActions ? 1 : 0)) + '" class="text-center" style="padding:40px 20px;"><div style="font-size:48px;opacity:0.3;margin-bottom:8px;">📭</div><div style="color:#6b7280;font-weight:600;">' + (msgs[page] || 'Data tidak ditemukan') + '</div></td></tr>';
       return;
@@ -1419,7 +1422,12 @@ window.ROLE_NAMES = ROLE_NAMES;
   function loadApprovalData(forceRefresh) {
     if (forceRefresh) clearCache('main');
     loadDataOptimizedForce(function (data) {
-      state.allData = _sortByDateDesc((data || []).filter(function (d) { return d.Status === 'pending'; }));
+      // FIX v4.3.3: Exclude mini project (Type=project) dari approval biasa
+      state.allData = _sortByDateDesc((data || []).filter(function (d) {
+        if (d.Status !== 'pending') return false;
+        var t = (d.Type || 'request').toString().toLowerCase();
+        return t !== 'project' && t !== 'mini-project' && t !== 'miniproject';
+      }));
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
         ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.approval.indexOf(h) === -1; }))
@@ -1432,7 +1440,12 @@ window.ROLE_NAMES = ROLE_NAMES;
   function loadDoneData(forceRefresh) {
     if (forceRefresh) clearCache('main');
     loadDataOptimizedForce(function (data) {
-      state.allData = _sortByDateDesc((data || []).filter(function (d) { return d.Status === 'approved'; }));
+      // FIX v4.3.3: Exclude mini project dari done biasa
+      state.allData = _sortByDateDesc((data || []).filter(function (d) {
+        if (d.Status !== 'approved') return false;
+        var t = (d.Type || 'request').toString().toLowerCase();
+        return t !== 'project' && t !== 'mini-project' && t !== 'miniproject';
+      }));
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
         ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.done.indexOf(h) === -1; }))
@@ -1466,6 +1479,25 @@ window.ROLE_NAMES = ROLE_NAMES;
       state.currentPage = 1;
       renderTable(); renderPagination();
     }, 'rejected');
+  }
+
+  // FIX v4.3.3: Loader Mini Project — filter dari Sheet1 dengan Type=project
+  // Data tetap di Sheet1 (1 sheet), cuma di-filter berdasarkan kolom Type
+  function loadMiniProjectData(forceRefresh) {
+    if (forceRefresh) clearCache('main');
+    loadDataOptimizedForce(function (data) {
+      // Filter: hanya yang Type=project (mini project / perbaikan)
+      state.allData = _sortByDateDesc((data || []).filter(function (d) {
+        var t = (d.Type || 'request').toString().toLowerCase();
+        return t === 'project' || t === 'mini-project' || t === 'miniproject';
+      }));
+      state.filteredData = state.allData.slice();
+      state.headers = state.allData.length > 0
+        ? _sortHeadersByColumnOrder(Object.keys(state.allData[0]).filter(function (h) { return HIDDEN_COLUMNS.approval.indexOf(h) === -1; }))
+        : [];
+      state.currentPage = 1;
+      renderTable(); renderPagination();
+    });
   }
 
   // =====================================================
@@ -1676,6 +1708,7 @@ window.ROLE_NAMES = ROLE_NAMES;
     else if (page === 'done') loadDoneData(forceRefresh);
     else if (page === 'rekap') loadRekapData(forceRefresh);
     else if (page === 'rejected') loadRejectedData(forceRefresh);
+    else if (page === 'miniproject') loadMiniProjectData(forceRefresh);
   }
 
   // FIX v4.2.4: Expose refresh functions untuk tombol Refresh di HTML
@@ -1694,6 +1727,10 @@ window.ROLE_NAMES = ROLE_NAMES;
     reloadPageData(true);
   };
   window.refreshRejectedData = function () {
+    showToast('🔄 Refresh data...', 'warning', 2000);
+    reloadPageData(true);
+  };
+  window.refreshMiniProjectData = function () {
     showToast('🔄 Refresh data...', 'warning', 2000);
     reloadPageData(true);
   };
@@ -1845,6 +1882,22 @@ window.ROLE_NAMES = ROLE_NAMES;
       // Initial load
       reloadPageData();
     }
+    // FIX v4.3.2: Init untuk halaman mini-project
+    if (page === 'miniproject') {
+      var searchInput = document.getElementById('search');
+      var pageSizeSelect = document.getElementById('pageSize');
+      if (searchInput && typeof debounceSearch === 'function') {
+        searchInput.addEventListener('input', debounceSearch(onSearch, 300));
+      }
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', function (e) {
+          state.pageSize = Number(e.target.value);
+          state.currentPage = 1;
+          renderTable(); renderPagination();
+        });
+      }
+      reloadPageData();
+    }
 
     // Listen sync complete → soft refresh
     window.addEventListener('pr:syncComplete', function () {
@@ -1865,7 +1918,7 @@ window.ROLE_NAMES = ROLE_NAMES;
    Ini mengatasi masalah browser cache yang masih pakai versi lama.
    ============================================================ */
 (function () {
-  var EXPECTED_VERSION = 'v4.2.9';
+  var EXPECTED_VERSION = 'v4.3.5';
   if (window.APP_VERSION !== EXPECTED_VERSION) {
     console.warn('⚠️ app.js outdated! Loaded:', window.APP_VERSION, 'Expected:', EXPECTED_VERSION);
     // Force reload dengan cache-busting
