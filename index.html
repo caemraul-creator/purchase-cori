@@ -10,12 +10,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.3.9">
+  <link rel="stylesheet" href="style.css?v=4.4.2">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <!-- Core + App -->
-  <script src="app.js?v=4.3.9"></script>
+  <script src="app.js?v=4.4.2"></script>
   <style>
     /* FIX v4.3.6: Layout kiri-kanan (form + history) */
     .main-layout {
@@ -32,16 +32,16 @@
     .form-card {
       background: var(--surface, #fff);
       border-radius: 12px;
-      padding: 24px;
+      padding: 18px 20px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
-    .form-group { margin-bottom: 16px; }
+    .form-group { margin-bottom: 10px; }
     .form-group label {
-      display: block; font-size: 13px; font-weight: 600;
-      color: var(--muted, #6b7280); margin-bottom: 5px;
+      display: block; font-size: 12px; font-weight: 600;
+      color: var(--muted, #6b7280); margin-bottom: 3px;
     }
     .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 10px 12px; font-size: 14px;
+      width: 100%; padding: 7px 10px; font-size: 13px;
       border: 1px solid var(--border, #e5e7eb); border-radius: 8px;
       background: #fff; color: var(--text, #111827);
       transition: border-color .15s;
@@ -57,13 +57,13 @@
     }
     .nominal-box {
       background: #eff6ff; border: 1px solid #bfdbfe;
-      border-radius: 8px; padding: 12px 16px; text-align: right;
-      font-size: 20px; font-weight: 700; color: #1e40af;
-      margin-bottom: 16px;
+      border-radius: 8px; padding: 8px 14px; text-align: right;
+      font-size: 16px; font-weight: 700; color: #1e40af;
+      margin-bottom: 10px;
     }
     .form-actions {
       display: flex; gap: 10px; justify-content: flex-end;
-      margin-top: 20px; padding-top: 16px;
+      margin-top: 12px; padding-top: 12px;
       border-top: 1px solid var(--border, #e5e7eb);
     }
     .btn-submit {
@@ -78,12 +78,12 @@
       border: none; cursor: pointer; font-size: 14px;
     }
     .form-title {
-      text-align: center; margin-bottom: 20px;
-      font-size: 22px; font-weight: 700; color: var(--text, #111827);
+      text-align: center; margin-bottom: 12px;
+      font-size: 18px; font-weight: 700; color: var(--text, #111827);
     }
     .form-subtitle {
-      text-align: center; margin-bottom: 24px;
-      font-size: 14px; color: var(--muted, #6b7280);
+      text-align: center; margin-bottom: 14px;
+      font-size: 12px; color: var(--muted, #6b7280);
     }
 
     /* Tabel history 15 data terakhir */
@@ -94,7 +94,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       display: flex;
       flex-direction: column;
-      min-height: 100%;
+      height: 100%;
     }
     .history-table-wrap {
       flex: 1 1 auto;
@@ -133,10 +133,10 @@
       color: #6b7280;
     }
     .history-table-wrap {
-      max-height: 480px;
       overflow: auto;
       border: 1px solid #e5e7eb;
       border-radius: 8px;
+      flex: 1 1 auto;
     }
     .history-table {
       width: 100%;
@@ -148,6 +148,11 @@
       top: 0;
       background: #f3f4f6;
       z-index: 2;
+    }
+    /* FIX v4.4.0: Tabel history auto height match form */
+    .history-card .history-table-wrap {
+      max-height: calc(100vh - 280px);
+      min-height: 300px;
     }
     .history-table th {
       padding: 8px 10px;
@@ -313,19 +318,18 @@
     <div class="form-subtitle">Isi data dengan lengkap. Status awal akan menjadi <b>Pending</b>.</div>
 
     <form id="requestForm">
-      <div class="form-group">
-        <label>Jenis Permintaan *</label>
-        <select id="Type" required onchange="toggleTypeInfo()">
-          <option value="request">📋 Request Biasa (Pembelian)</option>
-          <option value="project">🔧 Mini Project (Perbaikan/Maintenance)</option>
-        </select>
-        <small id="typeInfo" style="display:block;margin-top:4px;font-size:11px;color:#6b7280;">Pilih "Mini Project" untuk permintaan yang berhubungan dengan perbaikan.</small>
-      </div>
-
-      <div class="form-group" id="projectNameGroup" style="display:none;">
-        <label>Nama Project *</label>
-        <input type="text" id="ProjectName" placeholder="Contoh: Perbaikan Mesin A, Service Motor Listrik">
-        <small style="display:block;margin-top:4px;font-size:11px;color:#6b7280;">Isi nama project untuk pengelompokan. Item dengan nama project sama akan dikelompokkan.</small>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Jenis Permintaan *</label>
+          <select id="Type" required onchange="toggleTypeInfo()">
+            <option value="request">📋 Request Biasa</option>
+            <option value="project">🔧 Mini Project</option>
+          </select>
+        </div>
+        <div class="form-group" id="projectNameGroup" style="display:none;">
+          <label>Nama Project *</label>
+          <input type="text" id="ProjectName" placeholder="Perbaikan Mesin A">
+        </div>
       </div>
 
       <div class="form-row">
@@ -362,10 +366,10 @@
         <input type="text" id="Items" placeholder="Contoh: Kertas A4 80gsm" required>
       </div>
 
-      <div class="form-row">
+      <div class="form-row-3">
         <div class="form-group">
-          <label>Part Of / Bagian</label>
-          <input type="text" id="PartOf" placeholder="Contoh: Operational, Packing, Technician">
+          <label>Part Of</label>
+          <input type="text" id="PartOf" placeholder="Operational">
         </div>
         <div class="form-group">
           <label>Priority</label>
@@ -376,11 +380,15 @@
             <option value="Urgent">Urgent</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Order By</label>
+          <input type="text" id="OrderBy" placeholder="Nama pemohon">
+        </div>
       </div>
 
       <div class="form-group">
         <label>Deskripsi / Keterangan</label>
-        <textarea id="Description" rows="2" placeholder="Contoh: Stok habis, untuk ganti yang rusak"></textarea>
+        <textarea id="Description" rows="1" placeholder="Stok habis, ganti yang rusak"></textarea>
       </div>
 
       <div class="form-row-3">
@@ -413,11 +421,6 @@
 
       <div class="nominal-box" id="NominalDisplay">Rp 0</div>
 
-      <div class="form-group">
-        <label>Order By (Pemohon)</label>
-        <input type="text" id="OrderBy" placeholder="Nama yang mengajukan order">
-      </div>
-
       <div class="form-row">
         <div class="form-group">
           <label>Tanggal Beli Terakhir</label>
@@ -436,16 +439,16 @@
     </form>
   </div>
 
-  <!-- HISTORY (KANAN) — 15 data terakhir + search untuk edit -->
+  <!-- HISTORY (KANAN) — data terbaru + search untuk edit -->
   <div class="history-card">
-    <h3>📋 Data Request</h3>
-    <p class="subtitle">15 data terbaru. Cari untuk edit data lain.</p>
+    <h3>📋 Data Terbaru</h3>
+    <p class="subtitle">Semua data request terbaru (urut tanggal). Cari untuk filter.</p>
 
     <!-- Search box untuk cari data lain yang mau diedit -->
     <div class="history-search-box">
       <input type="text" id="historySearch" placeholder="🔍 Cari ID / item / requester untuk edit..." oninput="searchHistory()">
     </div>
-    <div class="history-info" id="historyInfo">Menampilkan 15 data terbaru</div>
+    <div class="history-info" id="historyInfo">Memuat data...</div>
 
     <div class="history-table-wrap" id="historyTableWrap">
       <div class="history-loading">⏳ Memuat data...</div>
@@ -635,20 +638,15 @@
         });
     });
 
-    // Toggle info text & show/hide ProjectName saat ganti jenis permintaan
+    // Toggle show/hide ProjectName saat ganti jenis permintaan
     function toggleTypeInfo() {
       var type = document.getElementById('Type').value;
-      var info = document.getElementById('typeInfo');
       var projectGroup = document.getElementById('projectNameGroup');
       var projectInput = document.getElementById('ProjectName');
       if (type === 'project') {
-        info.style.color = '#0f766e';
-        info.textContent = '🔧 Mini Project — data tetap di Sheet1, difilter via kolom Type.';
         if (projectGroup) projectGroup.style.display = 'block';
         if (projectInput) projectInput.required = true;
       } else {
-        info.style.color = '#6b7280';
-        info.textContent = 'Pilih "Mini Project" untuk permintaan yang berhubungan dengan perbaikan.';
         if (projectGroup) projectGroup.style.display = 'none';
         if (projectInput) { projectInput.required = false; projectInput.value = ''; }
       }
@@ -673,7 +671,7 @@
           var age = Date.now() - parseInt(cachedTime);
           if (age < HISTORY_CACHE_TTL) {
             allHistoryData = JSON.parse(cached);
-            renderHistoryTable(allHistoryData.slice(0, 15));
+            renderHistoryTable(allHistoryData);
             // Tetap background refresh kalau > 1 menit
             return;
           }
@@ -715,7 +713,7 @@
             sessionStorage.setItem(historyCacheTime, String(Date.now()));
           } catch(e) {}
 
-          renderHistoryTable(allHistoryData.slice(0, 15));
+          renderHistoryTable(allHistoryData);
         })
         .catch(function (err) {
           console.error('History fetch error:', err);
@@ -728,7 +726,7 @@
                 var db = new Date(b.SubmissionDate || b.CreatedAt || 0).getTime();
                 return db - da;
               });
-              renderHistoryTable(allHistoryData.slice(0, 15));
+              renderHistoryTable(allHistoryData);
             });
           } else {
             document.getElementById('historyTableWrap').innerHTML = '<div class="history-empty">❌ Gagal memuat data</div>';
@@ -742,8 +740,8 @@
 
       if (!q) {
         // Kosong → tampilkan 15 terbaru
-        renderHistoryTable(allHistoryData.slice(0, 15));
-        info.textContent = 'Menampilkan 15 data terbaru';
+        renderHistoryTable(allHistoryData);
+        info.textContent = 'Total ' + allHistoryData.length + ' data terbaru';
         return;
       }
 
@@ -753,10 +751,9 @@
         return text.indexOf(q) !== -1;
       });
 
-      // Batasi 50 hasil supaya tidak berat
-      var display = filtered.slice(0, 50);
-      renderHistoryTable(display);
-      info.textContent = 'Ditemukan ' + filtered.length + ' data (menampilkan ' + display.length + ')';
+      // Tampilkan semua yang match (tabel akan scroll sesuai tinggi form)
+      renderHistoryTable(filtered);
+      info.textContent = 'Ditemukan ' + filtered.length + ' data';
     }
 
     function renderHistoryTable(data) {
@@ -768,12 +765,12 @@
         return;
       }
 
-      // Sort by tanggal terbaru, ambil 15
+      // Sort by tanggal terbaru (semua data, tabel akan scroll sesuai tinggi form)
       var sorted = data.slice().sort(function (a, b) {
         var da = new Date(a.SubmissionDate || a.CreatedAt || 0).getTime();
         var db = new Date(b.SubmissionDate || b.CreatedAt || 0).getTime();
         return db - da;
-      }).slice(0, 15);
+      });
 
       var html = '<table class="history-table"><thead><tr>';
       html += '<th>ID</th>';
