@@ -10,12 +10,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.4.2">
+  <link rel="stylesheet" href="style.css?v=4.4.4">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <!-- Core + App -->
-  <script src="app.js?v=4.4.2"></script>
+  <script src="app.js?v=4.4.4"></script>
   <style>
     /* FIX v4.3.6: Layout kiri-kanan (form + history) */
     .main-layout {
@@ -442,7 +442,7 @@
   <!-- HISTORY (KANAN) — data terbaru + search untuk edit -->
   <div class="history-card">
     <h3>📋 Data Terbaru</h3>
-    <p class="subtitle">Semua data request terbaru (urut tanggal). Cari untuk filter.</p>
+    <p class="subtitle">16 data terbaru. Cari untuk edit data lain.</p>
 
     <!-- Search box untuk cari data lain yang mau diedit -->
     <div class="history-search-box">
@@ -671,7 +671,7 @@
           var age = Date.now() - parseInt(cachedTime);
           if (age < HISTORY_CACHE_TTL) {
             allHistoryData = JSON.parse(cached);
-            renderHistoryTable(allHistoryData);
+            renderHistoryTable(allHistoryData.slice(0, 16));
             // Tetap background refresh kalau > 1 menit
             return;
           }
@@ -713,7 +713,7 @@
             sessionStorage.setItem(historyCacheTime, String(Date.now()));
           } catch(e) {}
 
-          renderHistoryTable(allHistoryData);
+          renderHistoryTable(allHistoryData.slice(0, 16));
         })
         .catch(function (err) {
           console.error('History fetch error:', err);
@@ -726,7 +726,7 @@
                 var db = new Date(b.SubmissionDate || b.CreatedAt || 0).getTime();
                 return db - da;
               });
-              renderHistoryTable(allHistoryData);
+              renderHistoryTable(allHistoryData.slice(0, 16));
             });
           } else {
             document.getElementById('historyTableWrap').innerHTML = '<div class="history-empty">❌ Gagal memuat data</div>';
@@ -740,8 +740,8 @@
 
       if (!q) {
         // Kosong → tampilkan 15 terbaru
-        renderHistoryTable(allHistoryData);
-        info.textContent = 'Total ' + allHistoryData.length + ' data terbaru';
+        renderHistoryTable(allHistoryData.slice(0, 16));
+        info.textContent = 'Menampilkan 16 data terbaru (dari ' + allHistoryData.length + ' total)';
         return;
       }
 
@@ -751,9 +751,9 @@
         return text.indexOf(q) !== -1;
       });
 
-      // Tampilkan semua yang match (tabel akan scroll sesuai tinggi form)
-      renderHistoryTable(filtered);
-      info.textContent = 'Ditemukan ' + filtered.length + ' data';
+      // Batasi 16 hasil
+      renderHistoryTable(filtered.slice(0, 16));
+      info.textContent = 'Ditemukan ' + filtered.length + ' data (menampilkan ' + Math.min(filtered.length, 16) + ')';
     }
 
     function renderHistoryTable(data) {
@@ -774,15 +774,10 @@
 
       var html = '<table class="history-table"><thead><tr>';
       html += '<th>ID</th>';
-      html += '<th>Type</th>';
-      html += '<th>Project</th>';
       html += '<th>Submission</th>';
       html += '<th>Item</th>';
-      html += '<th>Dept</th>';
       html += '<th class="text-center">Qty</th>';
-      html += '<th class="text-right">Nominal</th>';
       html += '<th>Order By</th>';
-      html += '<th>Requester</th>';
       html += '<th class="text-center">Status</th>';
       html += '<th class="text-center">Aksi</th>';
       html += '</tr></thead><tbody>';
@@ -814,13 +809,6 @@
           } catch(e) { subStr = String(sub).substring(0, 16); }
         }
 
-        // Format nominal
-        var nominalStr = '';
-        if (nominal) {
-          try { nominalStr = 'Rp ' + Number(nominal).toLocaleString('id-ID'); }
-          catch(e) { nominalStr = String(nominal); }
-        }
-
         // Escape HTML
         function esc(s) {
           return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -830,17 +818,12 @@
 
         html += '<tr>';
         html += '<td>' + esc(id) + '</td>';
-        html += '<td class="text-center"><span class="' + typeClass + '">' + typeLabel + '</span></td>';
-        html += '<td>' + esc(projectName) + '</td>';
         html += '<td>' + esc(subStr) + '</td>';
-        html += '<td' + titleAttr + '>' + esc(item) + '</td>';
-        html += '<td>' + esc(dept) + '</td>';
+        html += '<td' + titleAttr + '>' + typeIcon + ' ' + esc(item) + '</td>';
         html += '<td class="text-center">' + esc(qty) + (unit ? ' ' + esc(unit) : '') + '</td>';
-        html += '<td class="text-right">' + esc(nominalStr) + '</td>';
         html += '<td>' + esc(orderBy) + '</td>';
-        html += '<td>' + esc(requester) + '</td>';
         html += '<td class="text-center"><span class="history-status ' + status + '">' + esc(status) + '</span></td>';
-        html += '<td class="text-center"><button onclick="editRequest(\'' + esc(id) + '\')" style="background:#0f766e;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;" title="Edit">✏️ Edit</button></td>';
+        html += '<td class="text-center"><button onclick="editRequest(\'' + esc(id) + '\')" style="background:#0f766e;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;" title="Edit">✏️</button></td>';
         html += '</tr>';
       });
 
