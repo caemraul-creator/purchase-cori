@@ -1226,9 +1226,9 @@ window.ROLE_NAMES = ROLE_NAMES;
   // Nominal, LastBuyingDate, OrderDate, Priority, OrderBy, Requester, Status, CreatedAt,
   // ApprovedBy, ApprovedDate, RejectedBy, RejectedDate, RejectedReason, DoneBy, DoneDate
   var HIDDEN_COLUMNS = {
-    approval: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy', 'BoughtQty', 'RemainingQty'],
-    done: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy', 'BoughtQty', 'RemainingQty'],
-    rekap: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'Requester', 'OrderBy', 'BoughtQty'],
+    approval: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy', 'BoughtQty', 'RemainingQty', 'ProjectName', 'Type'],
+    done: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'OrderBy', 'BoughtQty', 'RemainingQty', 'ProjectName', 'Type'],
+    rekap: ['CreatedAt', 'ApprovedBy', 'ApprovedDate', 'DoneBy', 'DoneDate', 'RejectedBy', 'RejectedDate', 'RejectedReason', 'Requester', 'OrderBy', 'BoughtQty', 'RemainingQty'],
     rejected: ['DoneBy', 'DoneDate', 'Price', 'Nominal', 'LastBuyingDate', 'CreatedAt', 'ApprovedBy', 'ApprovedDate', 'OrderBy', 'BoughtQty', 'RemainingQty']
   };
 
@@ -1410,7 +1410,7 @@ window.ROLE_NAMES = ROLE_NAMES;
     // - done = Mark Done (untuk item approved)
     // - rekap = Mark Done (untuk item partial yang masih ada sisa)
     // - rejected = tidak ada aksi
-    var hasActions = (page === 'approval' || page === 'done' || page === 'rekap');
+    var hasActions = (page === 'approval' || page === 'done');
     var headerHtml = state.headers.map(function (h) {
       var displayName = DISPLAY_NAMES[h] || h;
       var html = '<th>' + _escapeHtml(displayName) + '</th>';
@@ -1603,6 +1603,7 @@ window.ROLE_NAMES = ROLE_NAMES;
         var fd = new FormData();
         fd.append('action', 'approve');
         fd.append('ID', id); fd.append('Status', 'approved'); fd.append('ApprovedBy', name);
+        fd.append('ApprovedDate', new Date().toISOString());
         submitAction(fd, 'Request berhasil di-approve');
       }
     });
@@ -1631,6 +1632,7 @@ window.ROLE_NAMES = ROLE_NAMES;
         fd.append('action', 'reject');
         fd.append('ID', id); fd.append('Status', 'rejected');
         fd.append('RejectedBy', name); fd.append('RejectedReason', reason);
+        fd.append('RejectedDate', new Date().toISOString());
         submitAction(fd, 'Request berhasil di-reject');
       }
     });
@@ -1674,6 +1676,7 @@ window.ROLE_NAMES = ROLE_NAMES;
         var fd = new FormData();
         fd.append('action', 'completeRemaining');
         fd.append('ID', id); fd.append('Status', 'done'); fd.append('DoneBy', user);
+        fd.append('DoneDate', new Date().toISOString());
         submitAction(fd, 'Sisa request berhasil diselesaikan');
       }
     });
@@ -1691,6 +1694,7 @@ window.ROLE_NAMES = ROLE_NAMES;
         var fd = new FormData();
         fd.append('action', 'done');
         fd.append('ID', id); fd.append('Status', 'done'); fd.append('DoneBy', user);
+        fd.append('DoneDate', new Date().toISOString());
         submitAction(fd, 'Request selesai (Completed)');
       }
     });
@@ -1724,6 +1728,7 @@ window.ROLE_NAMES = ROLE_NAMES;
         fd.append('ID', id); fd.append('Status', 'partial');
         fd.append('BoughtQty', boughtQty); fd.append('RemainingQty', data.Qty - boughtQty);
         fd.append('DoneBy', user);
+        fd.append('DoneDate', new Date().toISOString());
         submitAction(fd, 'Partial request berhasil');
       }
     });
