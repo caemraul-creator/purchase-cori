@@ -1865,7 +1865,7 @@ window.ROLE_NAMES = ROLE_NAMES;
       renderMenu();
       renderUserFloater();
       loadDashboardStats();
-    } else {
+    } else if (page !== 'miniproject') {
       // Tabel pages: approval, done, rekap, rejected
       var searchInput = document.getElementById('search');
       var pageSizeSelect = document.getElementById('pageSize');
@@ -1880,22 +1880,6 @@ window.ROLE_NAMES = ROLE_NAMES;
         });
       }
       // Initial load
-      reloadPageData();
-    }
-    // FIX v4.3.2: Init untuk halaman mini-project
-    if (page === 'miniproject') {
-      var searchInput = document.getElementById('search');
-      var pageSizeSelect = document.getElementById('pageSize');
-      if (searchInput && typeof debounceSearch === 'function') {
-        searchInput.addEventListener('input', debounceSearch(onSearch, 300));
-      }
-      if (pageSizeSelect) {
-        pageSizeSelect.addEventListener('change', function (e) {
-          state.pageSize = Number(e.target.value);
-          state.currentPage = 1;
-          renderTable(); renderPagination();
-        });
-      }
       reloadPageData();
     }
 

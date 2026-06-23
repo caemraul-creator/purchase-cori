@@ -285,7 +285,7 @@
       var html = '<option value="">📊 Semua Project</option>';
       Object.keys(mpProjects).sort().forEach(function (name) {
         var count = mpProjects[name].length;
-        html += '<option value="' + escapeHtml(name) + '">🔧 ' + escapeHtml(name) + ' (' + count + ' items)</option>';
+        html += '<option value="' + name.replace(/"/g, '&quot;') + '">🔧 ' + escapeHtml(name) + ' (' + count + ' items)</option>';
       });
       select.innerHTML = html;
       select.value = current;
