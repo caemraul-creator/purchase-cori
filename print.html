@@ -621,7 +621,7 @@
           resolve(data);
         };
 
-        var url = new URL(API_URL);
+        var url = new URL(window.API_URL);
         url.searchParams.set('action', 'read');
         url.searchParams.set('callback', callbackName);
         if (sheetName) url.searchParams.set('sheet', sheetName);

@@ -629,7 +629,7 @@
 
       showToast('Mengirim request...', 'warning', 5000);
 
-      fetch(API_URL, { method: 'POST', body: fd })
+      fetch(window.API_URL, { method: 'POST', body: fd })
         .then(function (res) { return res.text(); })
         .then(function (text) {
           showToast('Request berhasil diajukan!', 'success');
@@ -686,13 +686,13 @@
     }
 
     function fetchHistoryFromAPI() {
-      if (typeof API_URL === 'undefined') {
+      if (typeof window.API_URL === 'undefined') {
         document.getElementById('historyTableWrap').innerHTML = '<div class="history-empty">app.js belum loaded</div>';
         return;
       }
 
       // OPTIMIZATION: Pakai fetch langsung + cache-busting (skip Firebase, skip JSONP fallback)
-      var url = API_URL + '?action=read&_t=' + Date.now();
+      var url = window.API_URL + '?action=read&_t=' + Date.now();
       fetch(url, { method: 'GET', cache: 'no-store' })
         .then(function (res) { return res.text(); })
         .then(function (text) {
@@ -863,8 +863,8 @@
 
       // 3. Kalau tidak ada (data lama), fetch single record
       showToast('⏳ Mencari data...', 'warning', 2000);
-      if (typeof API_URL !== 'undefined') {
-        fetch(API_URL + '?action=read&_t=' + Date.now(), { cache: 'no-store' })
+      if (typeof window.API_URL !== 'undefined') {
+        fetch(window.API_URL + '?action=read&_t=' + Date.now(), { cache: 'no-store' })
           .then(function (r) { return r.text(); })
           .then(function (text) {
             var match = text.match(/^[a-zA-Z_$][\w$]*\s*\(([\s\S]*)\)\s*;?\s*$/);
@@ -974,7 +974,7 @@
       var od = document.getElementById('editOrderDate').value;
       if (od) fd.append('OrderDate', od);
 
-      fetch(API_URL, { method: 'POST', body: fd })
+      fetch(window.API_URL, { method: 'POST', body: fd })
         .then(function (res) { return res.text(); })
         .then(function (text) {
           if (text && text.indexOf('Error') === 0) {

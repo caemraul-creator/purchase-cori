@@ -1077,6 +1077,78 @@ window.confirmDialog = confirmDialog;
 window.renderUserStatus = renderUserStatus;
 window.handleLogout = handleLogout;
 
+// Auto-translate helper: form ID -> field name -> ID ke EN
+window.translateFormToEnglish = translateFormToEnglish;
+
+function translateFormToEnglish(formIdPrefix) {
+  var prefix = formIdPrefix || '';
+  var prefix2 = prefix ? prefix + '_' : '';
+  // Mapping sederhana ID -> EN untuk field select/dropdown
+  var MAP = {
+    Department: {
+      'Akuntan': 'Accounting',
+      'Packing': 'Packing',
+      'Technician': 'Technician',
+      'Production': 'Production',
+      'Marketing': 'Marketing',
+      'Office': 'Office',
+      'QC': 'QC',
+      'Warehouse': 'Warehouse',
+      'HRD': 'HRD',
+      'Operational': 'Operational'
+    },
+    Unit: {
+      'Pcs': 'Pcs',
+      'Box': 'Box',
+      'Pack': 'Pack',
+      'Rim': 'Rim',
+      'Dus': 'Carton',
+      'Botol': 'Bottle',
+      'Kg': 'Kg',
+      'Liter': 'Liter',
+      'Set': 'Set',
+      'Lbr': 'Sheet',
+      'Roll': 'Roll',
+      'Btg': 'Piece',
+      'Unit': 'Unit'
+    },
+    Priority: {
+      'Low': 'Low',
+      'Medium': 'Medium',
+      'High': 'High',
+      'Urgent': 'Urgent'
+    },
+    Office: {
+      'Ngabul': 'Ngabul',
+      'Troso': 'Troso',
+      'Sekarjati': 'Sekarjati',
+      'Kalipucang': 'Kalipucang',
+      'Kudus': 'Kudus'
+    },
+    Status: {
+      'pending': 'Pending',
+      'approved': 'Approved',
+      'done': 'Done',
+      'rejected': 'Rejected',
+      'partial': 'Partial'
+    },
+    Type: {
+      'request': 'Request',
+      'project': 'Project'
+    }
+  };
+  var result = {};
+  Object.keys(MAP).forEach(function(field) {
+    var el = document.getElementById(prefix + field);
+    if (el) {
+      var raw = (el.value || '').trim();
+      var mapped = (MAP[field] && MAP[field][raw]) || raw;
+      result[field] = mapped;
+    }
+  });
+  return result;
+}
+
 // Firebase
 window.initFirebase = initFirebase;
 window.saveToFirebase = saveToFirebase;

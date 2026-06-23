@@ -329,6 +329,7 @@
   </div>
 
   
+  <script src="app.js?v=4.4.5"></script>
   <script>
     (function () {
       'use strict';
@@ -375,9 +376,9 @@
           return;
         }
 
-        if (typeof API_URL === 'undefined' || !API_URL) {
+      if (typeof window.API_URL === 'undefined' || !window.API_URL) {
           showMessage('❌ Configuration error. Please contact administrator.', 'error');
-          console.error('API_URL undefined in config.js');
+          console.error('API_URL undefined — app.js may not be loaded correctly');
           return;
         }
 
@@ -453,7 +454,7 @@
           }
 
           try {
-            var url = new URL(API_URL);
+            var url = new URL(window.API_URL);
             var params = new URLSearchParams({
               action: 'login',
               username: username,
@@ -500,7 +501,7 @@
           formData.append('username', username);
           formData.append('password', password);
 
-          fetch(API_URL, { method: 'POST', body: formData })
+          fetch(window.API_URL, { method: 'POST', body: formData })
             .then(function (res) {
               if (!res.ok) throw new Error('HTTP ' + res.status);
               return res.text();
