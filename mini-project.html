@@ -162,6 +162,23 @@
     .mp-summary-card.project { border-left: 4px solid #0f766e; }
     .mp-summary-card.items { border-left: 4px solid #2563eb; }
     .mp-summary-card.total { border-left: 4px solid #16a34a; }
+    /* Aksi Buttons */
+    .mp-btn { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: none; cursor: pointer; margin: 0 2px; display: inline-block; }
+    .mp-btn-approve { background: #16a34a; color: white; }
+    .mp-btn-approve:hover { background: #15803d; }
+    .mp-btn-reject { background: #dc2626; color: white; }
+    .mp-btn-reject:hover { background: #b91c1c; }
+    .mp-btn-done { background: #2563eb; color: white; }
+    .mp-btn-done:hover { background: #1d4ed8; }
+    /* Row selesai — tampilan indah */
+    .mp-row-done td { opacity: 0.65; background: #f0fdf4; transition: all 0.2s; }
+    .mp-row-done td:nth-child(3) { text-decoration: line-through; color: #166534; }
+    .mp-row-done .status-badge.done { background: #16a34a; color: white; }
+    /* Row partial — tampilan kuning/oranye */
+    .mp-row-partial td { background: #fffbeb; transition: all 0.2s; }
+    .mp-row-partial td:nth-child(3) { color: #92400e; font-weight: 600; }
+    .mp-row-partial .status-badge.partial { background: #f59e0b; color: white; }
+    .mp-partial-label { color: #d97706; font-weight: 700; font-size: 11px; }
   </style>
 </head>
 
@@ -356,7 +373,7 @@
         html += '<table class="project-group-table"><thead><tr>';
         html += '<th>ID</th><th>Submission</th><th>Item</th><th>Dept</th>';
         html += '<th class="text-center">Qty</th><th class="text-right">Nominal</th>';
-        html += '<th>Requester</th><th class="text-center">Status</th>';
+        html += '<th>Requester</th><th class="text-center">Status</th><th class="text-center">Aksi</th>';
         html += '</tr></thead><tbody>';
 
         items.forEach(function (r) {
@@ -388,7 +405,22 @@
 
           var titleAttr = (item && item.length > 25) ? ' title="' + escapeHtml(item) + '"' : '';
 
-          html += '<tr>';
+          var actionCell = '';
+          if (status === 'pending') {
+            actionCell = '<button class="mp-btn mp-btn-approve" onclick="mpApprove(\'' + id.replace(/'/g,"\\'") + '\')" title="Approve">✅</button><button class="mp-btn mp-btn-reject" onclick="mpReject(\'' + id.replace(/'/g,"\\'") + '\')" title="Reject">❌</button>';
+          } else if (status === 'approved') {
+            actionCell = '<button class="mp-btn mp-btn-done" onclick="mpDone(\'' + id.replace(/'/g,"\\'") + '\')" title="Selesai">📦</button>';
+          } else if (status === 'partial') {
+            actionCell = '<button class="mp-btn mp-btn-done" onclick="mpCompleteRemaining(\'' + id.replace(/'/g,"\\'") + '\')" title="Selesaikan sisa">📦 Sisa</button>';
+          } else if (status === 'done') {
+            actionCell = '<span class="mp-done-label">✅ Selesai</span>';
+          } else if (status === 'rejected') {
+            actionCell = '<span class="mp-rejected-label">❌ Ditolak</span>';
+          } else {
+            actionCell = '<span style="color:#9ca3af;font-size:11px;">—</span>';
+          }
+
+          html += '<tr class="' + (status === 'done' ? 'mp-row-done' : (status === 'partial' ? 'mp-row-partial' : '')) + '">';
           html += '<td>' + escapeHtml(id) + '</td>';
           html += '<td>' + escapeHtml(subStr) + '</td>';
           html += '<td' + titleAttr + '>' + escapeHtml(item) + '</td>';
@@ -397,6 +429,7 @@
           html += '<td class="text-right">' + escapeHtml(nominalStr) + '</td>';
           html += '<td>' + escapeHtml(requester) + '</td>';
           html += '<td class="text-center"><span class="status-badge ' + status + '">' + escapeHtml(status) + '</span></td>';
+          html += '<td class="text-center">' + actionCell + '</td>';
           html += '</tr>';
         });
 
@@ -438,6 +471,62 @@
 
     function escapeHtml(s) {
       return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // Aksi tombol di Mini Project
+    function mpApprove(id) {
+      if (!confirm('Setujui request project ini?')) return;
+      var fd = new FormData();
+      fd.append('action', 'approve');
+      fd.append('ID', id);
+      fd.append('Status', 'approved');
+      fd.append('ApprovedBy', sessionStorage.getItem('username') || 'User');
+      submitMPAction(fd, '✅ Request berhasil di-approve');
+    }
+    function mpReject(id) {
+      var reason = prompt('Alasan penolakan:');
+      if (!reason || !reason.trim()) { showToast('⚠️ Alasan wajib diisi', 'warning'); return; }
+      var fd = new FormData();
+      fd.append('action', 'reject');
+      fd.append('ID', id);
+      fd.append('Status', 'rejected');
+      fd.append('RejectedBy', sessionStorage.getItem('username') || 'User');
+      fd.append('RejectedReason', reason.trim());
+      submitMPAction(fd, '❌ Request berhasil di-reject');
+    }
+    function mpDone(id) {
+      if (!confirm('Tandai selesai? Semua item ini sudah dibeli?')) return;
+      var fd = new FormData();
+      fd.append('action', 'done');
+      fd.append('ID', id);
+      fd.append('Status', 'done');
+      fd.append('DoneBy', sessionStorage.getItem('username') || 'User');
+      submitMPAction(fd, '📦 Request berhasil diselesaikan');
+    }
+    function mpCompleteRemaining(id) {
+      var data = mpAllData.find(function(r) { return r.ID === id; });
+      if (!data) { showToast('Data tidak ditemukan', 'error'); return; }
+      var remaining = Number(data.RemainingQty) || (Number(data.Qty) || 0);
+      if (!confirm('Selesaikan sisa ' + remaining + ' unit untuk item ini?')) return;
+      var fd = new FormData();
+      fd.append('action', 'completeRemaining');
+      fd.append('ID', id);
+      fd.append('Status', 'done');
+      fd.append('DoneBy', sessionStorage.getItem('username') || 'User');
+      submitMPAction(fd, '✅ Sisa request berhasil diselesaikan');
+    }
+    function submitMPAction(fd, successMsg) {
+      showToast('⏳ Memproses...', 'warning');
+      fetch(API_URL, { method: 'POST', body: fd })
+        .then(function(res) { return res.text(); })
+        .then(function(text) {
+          if (text && text.indexOf('Error') === 0) throw new Error(text);
+          showToast(successMsg, 'success');
+          loadMiniProjectPage();
+        })
+        .catch(function(err) {
+          showToast('❌ Gagal: ' + err.message, 'error');
+        });
     }
 
     // Init

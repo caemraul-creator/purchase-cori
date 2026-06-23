@@ -1422,11 +1422,8 @@ window.ROLE_NAMES = ROLE_NAMES;
   function loadApprovalData(forceRefresh) {
     if (forceRefresh) clearCache('main');
     loadDataOptimizedForce(function (data) {
-      // FIX v4.3.3: Exclude mini project (Type=project) dari approval biasa
       state.allData = _sortByDateDesc((data || []).filter(function (d) {
-        if (d.Status !== 'pending') return false;
-        var t = (d.Type || 'request').toString().toLowerCase();
-        return t !== 'project' && t !== 'mini-project' && t !== 'miniproject';
+        return d.Status === 'pending';
       }));
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
@@ -1440,11 +1437,8 @@ window.ROLE_NAMES = ROLE_NAMES;
   function loadDoneData(forceRefresh) {
     if (forceRefresh) clearCache('main');
     loadDataOptimizedForce(function (data) {
-      // FIX v4.3.3: Exclude mini project dari done biasa
       state.allData = _sortByDateDesc((data || []).filter(function (d) {
-        if (d.Status !== 'approved') return false;
-        var t = (d.Type || 'request').toString().toLowerCase();
-        return t !== 'project' && t !== 'mini-project' && t !== 'miniproject';
+        return d.Status === 'approved';
       }));
       state.filteredData = state.allData.slice();
       state.headers = state.allData.length > 0
