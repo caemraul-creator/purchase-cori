@@ -580,6 +580,18 @@
     const currencyColumns = ['Price', 'Nominal'];
 
     function createTableHTML(data, hiddenColumns, filter = null) {
+      if (!Array.isArray(data) || data.length === 0) return '<p>Tidak ada data</p>';
+
+      let filteredData = data;
+      if (filter) {
+        filteredData = data.filter(row => (row.Status || '').toLowerCase() === filter);
+      }
+
+      if (filteredData.length === 0) return '<p>Tidak ada data</p>';
+
+      const allHeaders = Object.keys(filteredData[0] || {});
+      const headers = allHeaders.filter(h => ALLOWED_COLUMNS.includes(h));
+
       const colWidths = {
         'ID': '6%', 'Department': '7%', 'Office': '6%', 'Items': '11%', 'PartOf': '6%',
         'Description': '12%', 'Qty': '3%', 'Unit': '3%', 'Price': '6%', 'Nominal': '6%',
