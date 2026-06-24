@@ -579,6 +579,7 @@
     const dateOnlyColumns = ['LastBuyingDate', 'OrderDate'];
     const currencyColumns = ['Price', 'Nominal'];
 
+    function createTableHTML(data, hiddenColumns, filter = null) {
       const colWidths = {
         'ID': '6%', 'Department': '7%', 'Office': '6%', 'Items': '11%', 'PartOf': '6%',
         'Description': '12%', 'Qty': '3%', 'Unit': '3%', 'Price': '6%', 'Nominal': '6%',
